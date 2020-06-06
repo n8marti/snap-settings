@@ -1,0 +1,240 @@
+#!/usr/bin/env python3
+
+""" Gtk window to manage Snapd settings """
+
+import gi
+import json
+import netifaces
+import re
+import subprocess
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+
+class Handler:
+    def gtk_widget_destroy(self, *args):
+        Gtk.main_quit()
+
+    def on_switch_metered_state_set(self, *args):
+        if args[1] == True:
+            state = 'null'
+        elif args[1] == False:
+            state = 'hold'
+        set_metered_handling(state)
+
+    def on_checkbox_metered_toggled(self, *args):
+        state = args[0].get_active()
+        set_metered_status(connection, state)
+
+    def on_timer_apply_clicked(self, *args):
+        input_obj = builder.get_object('timer_entry')
+        suggested_obj = builder.get_object('timer_suggested')
+        if input_obj.get_text():
+            input = input_obj.get_text()
+        else:
+            input = suggested_obj.get_text()
+            input_obj.set_text(input)
+        set_refresh_timer(input)
+
+    def on_revs_kept_value_changed(self, *args):
+        entry = builder.get_object('revs_kept')
+        revs = entry.get_text()
+        set_revisions_kept(revs)
+
+
+def get_metered_status():
+    """
+    Returns the connection name and nmcli's metered status.
+    If there is no internet connection, then "disconnected" is returned.
+    statuses: unknown, yes, no, yes (guessed), no (guessed)
+    """
+    # TODO: Verify this with other connections:
+    #   + offline
+    #   - wired
+    #   - ppp
+    #   - bluetooth?
+    # Get device from the default route.
+    gws = netifaces.gateways()
+    try:
+        gw4_device = gws['default'][netifaces.AF_INET][1]
+    except KeyError:
+        inet_connection = "(offline)"
+        metered_status = "disconnected"
+        # TODO: Need to disable checkbox_metered when disconnected.
+        builder.get_object('box_connection').hide()
+        return inet_connection,metered_status
+    subproc = subprocess.run(
+        ['nmcli', '-t', '-f', 'GENERAL.CONNECTION', '--mode', 'tabular', 'dev', 'show', gw4_device],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True
+    )
+    # Get connection name.
+    inet_connection = subproc.stdout.rstrip()
+    # Get metered status.
+    if inet_connection:
+        subproc = subprocess.run(
+            ['nmcli', '-f', 'connection.metered', 'connection', 'show', inet_connection],
+            env={'LANG': 'C'},
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+        metered_status = subproc.stdout.split(':')[1].strip()
+    return inet_connection,metered_status
+
+def get_system_settings():
+    """ Returns system settings requiring elevated privileges. """
+    subproc = subprocess.run(
+        ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.retain'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True
+    )
+    try:
+        data = json.loads(subproc.stdout)
+        revisions_kept = data['refresh.retain']
+    except json.decoder.JSONDecodeError:
+        # pkexec authorization window was probably cancelled.
+        exit(1)
+    subproc = subprocess.run(
+        ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.metered'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True
+    )
+    try:
+        data = json.loads(subproc.stdout)
+        metered_handling = data['refresh.metered']
+    except json.decoder.JSONDecodeError:
+        # refresh.metered is probably null.
+        metered_handling = 'null'
+    return metered_handling,revisions_kept
+
+def get_refresh_info():
+    """ Returns value of snapd's refresh timer. """
+    subproc = subprocess.run(
+        ['snap', 'refresh', '--time'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True
+    )
+    lines = subproc.stdout.splitlines()
+    refresh_timer = lines[0].split()[1]
+    last_refresh = lines[1].split()[1]
+    next_refresh = lines[2].split(':',1)[1]
+    return refresh_timer,last_refresh,next_refresh
+
+def set_entity_value(**kwargs):
+    """ Sets initial values of certain Gtk widget properties. """
+    item = builder.get_object(kwargs['id'])
+    func = kwargs['func']
+    value = kwargs['value']
+    if func == 'set_focus_on_click':
+        item.set_focus_on_click(value)
+    elif func == 'set_state':
+        if value == 'hold':
+            value = False
+        elif value == 'null':
+            value = True
+        else:
+            print(value)
+            return
+        item.set_state(value)
+    elif func == 'set_text':
+        item.set_text(value)
+    elif func == 'set_value':
+        item.set_value(value)
+    elif func == 'set_label':
+        item.set_label(value)
+    elif func == 'set_active':
+        if value == 'unkown' or value == 'no' or value == 'no (guessed)' or value == 'disconnected':
+            state = False
+        elif value == 'yes' or value == 'yes (guessed)':
+            state = True
+        item.set_active(state)
+
+    else:
+        print("error: unkown function")
+        exit(1)
+
+def set_metered_status(connection, state):
+    """
+    statuses: unknown, yes, no, yes (guessed), no (guessed)
+    """
+    status = 'no'
+    if state == True:
+        status = 'yes'
+    subproc = subprocess.run(
+        ['nmcli', 'connection', 'modify', connection, 'connection.metered', status],
+        env={'LANG': 'C'},
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+def set_metered_handling(state):
+    subproc = subprocess.run(
+        ['pkexec', 'snap', 'set', 'system', 'refresh.metered='+state],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+def set_refresh_timer(value):
+    try:
+        subproc = subprocess.run(
+            ['pkexec', 'snap', 'set', 'system', 'refresh.timer='+value],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    except:
+        value = refresh_timer
+        subproc = subprocess.run(
+            ['pkexec', 'snap', 'set', 'system', 'refresh.timer='+value],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
+
+def set_revisions_kept(revs):
+    try:
+        subproc = subprocess.run(
+            ['pkexec', 'snap', 'set', 'system', 'refresh.retain='+revs],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            check=True
+        )
+    except CalledProcessError:
+        print(subproc.CalledProcessError)
+
+
+# Instantiate builder.
+builder = Gtk.Builder()
+app_ui_dir = '/usr/share/snap-settings/ui/'
+builder.add_from_file(app_ui_dir + 'snap-settings.glade')
+
+# Get initial values. (requires pkexec)
+metered_handling,revisions_kept = get_system_settings() # pkexec
+connection,metered_status = get_metered_status()
+refresh_timer,last_refresh,next_refresh = get_refresh_info()
+
+# Set initial GUI values for properties of Gtk widgets not set by Glade.
+ids = {
+    'switch_metered': ['set_state', metered_handling],
+    'current_connection': ['set_text', connection],
+    'checkbox_metered': ['set_active', metered_status],
+    'timer_entry': ['set_text', refresh_timer],
+    'revs_kept': ['set_value', revisions_kept],
+    'refresh_dates': ['set_label', next_refresh]
+}
+for id, list in ids.items():
+    func = list[0]
+    value = list[1]
+    set_entity_value(id=id, func=func, value=value)
+
+builder.connect_signals(Handler())
+
+window = builder.get_object("window_settings")
+window.show()
+
+Gtk.main()

@@ -1,0 +1,8 @@
+
+[Desktop Entry]
+Name=Snap Settings
+Comment=Manage snap apps and settings
+Exec=snap-settings
+Type=Application
+Icon=None
+Categories=GNOME;GTK;System;Utility;

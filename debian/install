@@ -1,0 +1,6 @@
+install-files/bin                   usr
+install-files/applications          usr/share
+install-files/locale                usr/share
+install-files/actions               usr/share/polkit-1
+install-files/snap-settings/po      usr/share/snap-settings
+install-files/ui                    usr/share/snap-settings
