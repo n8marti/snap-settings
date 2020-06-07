@@ -7,6 +7,7 @@ import json
 import netifaces
 import re
 import subprocess
+from pathlib import Path
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -210,8 +211,15 @@ def set_revisions_kept(revs):
 
 # Instantiate builder.
 builder = Gtk.Builder()
+
+# Add glade GUI file.
 app_ui_dir = '/usr/share/snap-settings/ui/'
-builder.add_from_file(app_ui_dir + 'snap-settings.glade')
+dir = Path(app_ui_dir)
+if dir.is_dir():
+    builder.add_from_file(app_ui_dir + 'snap-settings.glade')
+else:
+    app_ui_dir = '../ui/'
+    builder.add_from_file(app_ui_dir + 'snap-settings.glade')
 
 # Get initial values. (requires pkexec)
 metered_handling,revisions_kept = get_system_settings() # pkexec
