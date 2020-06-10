@@ -1,4 +1,4 @@
-Source: snap-settings
+Source: wasta-snap-support
 Section: utils
 Priority: extra
 Maintainer: Nate Marti <nate_marti@sil.org>
@@ -8,7 +8,7 @@ Homepage: https://github.com/wasta-linux/wasta-offline
 
 Package: wasta-snap-support
 Architecture: all
-Depends: network-manager, snapd, ${shlibs:Depends}, ${misc:Depends}
+Depends: network-manager, snapd, python3, ${shlibs:Depends}, ${misc:Depends}
 Suggests:
 Description: Manage snap packages and settings for better offline support.
  Snap Settings provides a graphical interface for managing various snap system
