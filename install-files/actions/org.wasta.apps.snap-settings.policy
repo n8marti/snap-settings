@@ -10,10 +10,11 @@
     <vendor>Wasta-Linux</vendor>
     <vendor_url>sites.google.com/site/wastalinux/</vendor_url>
     <defaults>
-      <allow_any>no</allow_any>
+      <allow_any>auth_admin_keep</allow_any>
       <allow_inactive>no</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
     </defaults>
     <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/snap-settings</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 </policyconfig>
