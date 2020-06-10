@@ -1,8 +1,8 @@
 
 [Desktop Entry]
 Name=Snap Settings
-Comment=Manage snap apps and settings
-Exec=snap-settings
+Comment=Manage snap system settings
+Exec=pkexec /usr/bin/snap-settings
 Type=Application
-Icon=None
+Icon=preferences-system
 Categories=GNOME;GTK;System;Utility;
