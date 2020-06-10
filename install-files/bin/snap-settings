@@ -5,9 +5,15 @@
 import gi
 import json
 import netifaces
+import os
+from pathlib import Path
 import re
 import subprocess
-from pathlib import Path
+
+# Verify execution with elevated privileges.
+if os.geteuid() != 0:
+    print("snap-settings needs elevated privileges; e.g.:\npkexec snap-settings\nsudo snap-settings")
+    exit(1)
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -51,7 +57,7 @@ def get_metered_status():
     """
     # TODO: Verify this with other connections:
     #   + offline
-    #   - wired
+    #   + wired
     #   - ppp
     #   - bluetooth?
     # Get device from the default route.
@@ -86,29 +92,33 @@ def get_metered_status():
 
 def get_system_settings():
     """ Returns system settings requiring elevated privileges. """
-    subproc = subprocess.run(
-        ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.retain'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True
-    )
+    # Get refresh.retain setting.
     try:
+        subproc = subprocess.run(
+            ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.retain'],
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+            check=True
+        )
         data = json.loads(subproc.stdout)
         revisions_kept = data['refresh.retain']
-    except json.decoder.JSONDecodeError:
-        # pkexec authorization window was probably cancelled.
-        exit(1)
-    subproc = subprocess.run(
-        ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.metered'],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True
-    )
+    except subprocess.CalledProcessError as e:
+        # Is this a pkexec error or a snap error?
+        if e.returncode == 126: # User cancelled pkexec authorization window.
+            exit(1)
+        else: # Error in snap command; most likely due to unset refresh.retain.
+            revisions_kept = 2
     try:
+        subproc = subprocess.run(
+            ['pkexec', 'snap', 'get', '-d', 'system', 'refresh.metered'],
+            stdout=subprocess.PIPE,
+            universal_newlines=True,
+            check=True
+        )
         data = json.loads(subproc.stdout)
         metered_handling = data['refresh.metered']
-    except json.decoder.JSONDecodeError:
-        # refresh.metered is probably null.
+    except subprocess.CalledProcessError as e:
+        # Error in snap command; most likely due to unset refresh.metered.
         metered_handling = 'null'
     return metered_handling,revisions_kept
 
@@ -117,7 +127,6 @@ def get_refresh_info():
     subproc = subprocess.run(
         ['snap', 'refresh', '--time'],
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
         universal_newlines=True
     )
     lines = subproc.stdout.splitlines()
@@ -149,7 +158,7 @@ def set_entity_value(**kwargs):
     elif func == 'set_label':
         item.set_label(value)
     elif func == 'set_active':
-        if value == 'unkown' or value == 'no' or value == 'no (guessed)' or value == 'disconnected':
+        if value == 'unknown' or value == 'no' or value == 'no (guessed)' or value == 'disconnected':
             state = False
         elif value == 'yes' or value == 'yes (guessed)':
             state = True
