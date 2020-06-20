@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+
+# Verify execution with elevated privileges.
+#if os.geteuid() != 0:
+#    print("wasta-snap-manager needs elevated privileges; e.g.:\npkexec snap-settings\nsudo snap-settings")
+#    exit(1)
+
+import sys
+from os.path import abspath
+from pathlib import Path
+
+# Add wsm package of modules.
+bin_path = Path(abspath(__file__))
+bin_dir = bin_path.parents[0]
+bin_parent_dir = bin_path.parents[1]
+
+if bin_parent_dir.parts[-1][0:3] == 'src':
+    # If bin_dir's parent folder is "src*", then use uninstalled location.
+    modules_dir = str(bin_path.parents[1])
+else:
+    modules_dir = '/usr/share/wasta-snap-manager'
+sys.path.append(modules_dir)
+
+
+if __name__ == '__main__':
+
+    import wsm.wsmapp
+    import wsm.snapctl
+    #print(wsm.snapctl.api_get_snap_info('chromium'))
+    #exit()
+    wsm.wsmapp.app.window.show_all()
+
+    status = wsm.wsmapp.Gtk.main()
+    sys.exit(status)

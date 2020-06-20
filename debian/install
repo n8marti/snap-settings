@@ -1,5 +1,14 @@
-install-files/bin                   usr
-install-files/applications          usr/share
-install-files/locale                usr/share
-install-files/snap-settings         usr/share
-install-files/actions               usr/share/polkit-1
+src-snap-settings/bin                   usr
+src-snap-settings/applications          usr/share
+src-snap-settings/locale                usr/share
+src-snap-settings/actions               usr/share/polkit-1
+src-snap-settings/po                    usr/share/snap-settings
+src-snap-settings/ui                    usr/share/snap-settings
+
+src-wasta-snap-manager/bin              usr
+src-wasta-snap-manager/applications     usr/share
+src-wasta-snap-manager/locale           usr/share
+src-wasta-snap-manager/actions          usr/share/polkit-1
+#src-wasta-snap-manager/po               usr/share/snap-settings
+src-wasta-snap-manager/ui               usr/share/wasta-snap-manager
+src-wasta-snap-manager/wsm              usr/share/wasta-snap-manager
