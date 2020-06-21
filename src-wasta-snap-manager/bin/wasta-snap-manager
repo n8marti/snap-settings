@@ -26,8 +26,6 @@ if __name__ == '__main__':
 
     import wsm.wsmapp
     import wsm.snapctl
-    #print(wsm.snapctl.api_get_snap_info('chromium'))
-    #exit()
     wsm.wsmapp.app.window.show_all()
 
     status = wsm.wsmapp.Gtk.main()

@@ -3,13 +3,10 @@
 import gi
 import os
 import pwd
-import subprocess
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from pathlib import Path
-
-import snapctl
 
 
 class InstalledSnapRow(Gtk.ListBoxRow):
@@ -67,7 +64,10 @@ def populate_listbox(list_box, contents_dict):
     return rows
 
 def guess_offline_source_folder():
-    user = pwd.getpwuid(int(os.environ['PKEXEC_UID'])).pw_name
+    try:
+        user = pwd.getpwuid(int(os.environ['PKEXEC_UID'])).pw_name
+    except KeyError:
+        user = pwd.getpwuid(os.geteuid()).pw_name
     # Check for USB device wasta-offline folder.
     try:
         begin = sorted(Path('/media/' + user).glob('*/wasta-offline'))[0]

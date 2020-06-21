@@ -1,41 +1,24 @@
 # Snapd-related functions.
 
 import os
+# TODO: use pathlib instead of os?
 import platform
-import requests
 import subprocess
 import urllib.request
 
 from pathlib import Path
 
-import wsm.snapdrequests
+from wsm.snapd import snap
 
-"""
-def get_installed_snaps():
-    installed_snaps = {}
-    # Get output from: $ snap list
-    snap_list = subprocess.run(
-        ['snap', 'list'],
-        stdout=subprocess.PIPE
-    )
-    installed_snaps = parse_snap_list(snap_list.stdout)
-    return installed_snaps
-"""
 
 def api_get_snap_list():
-    payload = '/v2/snaps'
-    session = requests.Session()
-    fake_http = "http://snapd/"
-    session.mount(fake_http, wsm.snapdrequests.SnapdAdapter())
-    result = session.get(fake_http + payload).json()['result'] # list of snap dicts
+    result = snap.list()
     snaps_list_dict = {}
     for s in result:
         try:
             icon = s['icon']
         except KeyError:
             icon = '/usr/share/icons/gnome/scalable/places/poi-marker.svg'
-        #icon = '[none]'
-        #snaps_list_dict[s['name']] = [s['revision'], s['confinement'], s['summary']]
         snaps_list_dict[s['name']] = {
             'name': s['name'],
             'icon': icon,
@@ -46,80 +29,16 @@ def api_get_snap_list():
     return snaps_list_dict
 
 def api_get_snap_info(snap):
-    payload = '/v2/snaps/' + snap
-    session = requests.Session()
-    fake_http = "http://snapd/"
-    session.mount(fake_http, wsm.snapdrequests.SnapdAdapter())
-    info_dict = session.get(fake_http + payload).json()['result']
-    return info_dict
+    result = snap.info(snap)
+    return result
 
 def api_get_snap_refresh():
-    payload = '/v2/find?select=refresh'
-    session = requests.Session()
-    fake_http = "http://snapd/"
-    session.mount(fake_http, wsm.snapdrequests.SnapdAdapter())
-    result = session.get(fake_http + payload).json()['result']
+    result = snap.refresh()
     updatable = []
     for s in result:
         updatable.append(s['name'])
     return updatable
-"""
-def parse_snap_list(cmd_stdout):
-    # Iterate through each line of the output.
-    # TODO: Consider using PyYAML package for this (pip install PyYAML).
-    snaps_list_dict = {}
-    for snap_text in cmd_stdout.splitlines():
-        if snap_text == cmd_stdout.splitlines()[0]:
-            # Skip header line.
-            continue
-        # Listify the line by spaces.
-        l = snap_text.decode().split()
-        snap, revision = l[0], l[2]
-        #notes = ''
-        # TODO: Could a 'classic' snap also have other notes? Maybe needs regex.
-        #if len(l) == 6 and l[5] == 'classic':
-        #    notes = l[5]
-        #description = api_get_snap_info(snap)['description']
-        # Add snap details to dictionary.
-        #snaps_list_dict[snap] = [revision, notes, description]
-        snaps_list_dict[snap] = [revision]
-    return snaps_list_dict
 
-def get_snap_details(snap):
-    print("Getting info for", snap, "using 'unshare' to block net access...")
-    details = subprocess.run(
-        ['pkexec', 'unshare', '-n', 'snap', 'info', snap, '--verbose'],
-        stdout=subprocess.PIPE
-    )
-    info_dict = parse_snap_details(details.stdout)
-    return info_dict
-
-def parse_snap_details(output):
-    lines = output.splitlines()
-    info_dict = {}
-    d, n = 0, 0
-    for line in lines:
-        line = line.decode()
-        if line[0] == ' ':
-            # Generally ignore indented lines...
-            if d > 0:
-                # ...except if part of description.
-                # An earlier line, lines[d], started the description field.
-                info_dict['description'] += line
-            n += 1
-            continue
-        d = 0
-        parts = line.split(':')
-        key = parts[0]
-        data = parts[1]
-        if key == 'description':
-            # Description follows on next lines.
-            d = n
-            data = '' # to remove initial '|'
-        info_dict[key] = data
-        n += 1
-    return info_dict
-"""
 def install_snap(snap_file_path):
     base, ext = os.path.splitext(snap_file_path)
     assert_file_path = base + '.assert'
@@ -224,30 +143,9 @@ def get_online_updates(snap):
 
 def get_offline_updatable_snaps(installed_snaps_dict, offline_snaps_dict):
     updatable = []
-    for snap, details in installed_snaps_dict.items():
-        rev = details[0]
+    for snap in installed_snaps_dict.keys():
+        rev = installed_snaps_dict[snap]['revision']
         if snap in offline_snaps_dict:
             if offline_snaps_dict[snap] > rev:
                 updatable.append(snap)
     return updatable
-"""
-def get_online_updatable_snaps():
-    # TODO: Get download size?
-    # TODO: Use API instead?
-    refresh_output = subprocess.run(
-        ['snap', 'refresh', '--list'],
-        stdout=subprocess.PIPE
-    )
-    updatable = []
-    lines = refresh_output.stdout.splitlines()
-    for snap_text in lines:
-        if snap_text == lines[0]:
-            # Skip header line.
-            continue
-        # Listify the line by spaces.
-        l = snap_text.decode().split()
-        snap, revision = l[0], l[2]
-        updatable.append(snap)
-
-    return updatable
-"""
