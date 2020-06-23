@@ -104,7 +104,7 @@ def list_offline_snaps(dir, init=False):
     arch = platform.machine()
     if arch != 'x86_64':
         print("Arch", arch, "not supported yet for offline updates.")
-        return
+        return offline_dict
     else:
         arch = 'amd64'
 

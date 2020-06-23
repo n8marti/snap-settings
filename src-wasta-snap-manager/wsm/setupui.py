@@ -6,6 +6,7 @@ import pwd
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+from gi.repository import Pango
 from pathlib import Path
 
 
@@ -47,13 +48,53 @@ class InstalledSnapRow(Gtk.ListBoxRow):
         label_name.set_markup("<span weight=\"bold\">" + snap + "</span>")
         label_description = Gtk.Label(description)
         label_description.set_alignment(0.0, 0.5)
+        label_description.set_ellipsize(Pango.EllipsizeMode.END)
+        label_description.set_max_width_chars(60)
 
         # Pack the 2 parts of the info box into the row box.
         box_info.pack_start(label_name, False, False, 1)
         box_info.pack_start(label_description, False, False, 1)
 
+class AvailableSnapRow(Gtk.ListBoxRow):
+    def __init__(self, data):
+        super(Gtk.ListBoxRow, self).__init__()
+        self.data = data
 
-def populate_listbox(list_box, contents_dict):
+        # Parse the input data.
+        icon = '[icon]'
+        snap = data[0]
+        description = 'description'
+
+        # Define the row.
+        box_row = Gtk.Box(orientation='horizontal')
+        self.add(box_row)
+
+        # Define the various parts of the row box.
+        label_icon = Gtk.Image.new_from_file(icon)
+        box_info = Gtk.Box(orientation='vertical')
+        self.button_install_offline = Gtk.Button()
+        self.button_install_offline.set_label('Install')
+
+        # Pack the various parts of the row box.
+        box_row.pack_start(label_icon, False, False, 5)
+        box_row.pack_start(box_info, False, False, 5)
+        box_row.pack_end(self.button_install_offline, False, False, 5)
+
+        # Define the 2 parts of the info box within the row.
+        label_name = Gtk.Label(snap)
+        label_name.set_alignment(0.0, 0.5)
+        label_name.set_markup("<span weight=\"bold\">" + snap + "</span>")
+        #label_description = Gtk.Label(description)
+        #label_description.set_alignment(0.0, 0.5)
+        #label_description.set_ellipsize(Pango.EllipsizeMode.END)
+        #label_description.set_max_width_chars(60)
+
+        # Pack the 2 parts of the info box into the row box.
+        box_info.pack_start(label_name, False, False, 1)
+        #box_info.pack_start(label_description, False, False, 1)
+
+
+def populate_listbox_installed(list_box, contents_dict):
     rows = {}
     count = 0
     for snap in sorted(contents_dict.keys()):

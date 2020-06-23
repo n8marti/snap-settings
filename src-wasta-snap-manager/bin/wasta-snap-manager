@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 # Verify execution with elevated privileges.
-#if os.geteuid() != 0:
-#    print("wasta-snap-manager needs elevated privileges; e.g.:\npkexec snap-settings\nsudo snap-settings")
-#    exit(1)
+import os
+if os.geteuid() != 0:
+    print("wasta-snap-manager needs elevated privileges; e.g.:\npkexec", __file__, "\nsudo", __file__)
+    exit(1)
 
 import sys
 from os.path import abspath
