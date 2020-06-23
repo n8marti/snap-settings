@@ -62,7 +62,7 @@ class AvailableSnapRow(Gtk.ListBoxRow):
 
         # Parse the input data.
         icon = '[icon]'
-        snap = data[0]
+        snap = data
         description = 'description'
 
         # Define the row.
@@ -94,9 +94,25 @@ class AvailableSnapRow(Gtk.ListBoxRow):
         #box_info.pack_start(label_description, False, False, 1)
 
 
-def populate_listbox_installed(list_box, contents_dict):
+def populate_listbox_installed(list_box, snaps_list):
     rows = {}
     count = 0
+    # Create dictionary of relevant info: icon, name, description, revision.
+    contents_dict = {}
+    for entry in snaps_list:
+        try:
+            icon = entry['icon']
+        except KeyError:
+            icon = '/usr/share/icons/gnome/scalable/places/poi-marker.svg'
+
+        contents_dict[entry['name']] = {
+            'icon': icon,
+            'name': entry['name'],
+            'summary': entry['summary'],
+            'revision': entry['revision'],
+            'confinement': entry['confinement']
+        }
+    # Use this dictionary to build each listbox row.
     for snap in sorted(contents_dict.keys()):
         row = InstalledSnapRow(contents_dict[snap])
         list_box.add(row)

@@ -13,6 +13,7 @@ from gi.repository import Gtk
 from wsm import handler
 from wsm import setupui
 from wsm import snapctl
+from wsm import snapd
 
 
 class WSMApp():
@@ -32,8 +33,8 @@ class WSMApp():
         offline_snaps = snapctl.list_offline_snaps(source_folder)
         if len(offline_snaps) > 0:
             updatable = snapctl.get_offline_updatable_snaps(installed_snaps, offline_snaps)
-            for snap in updatable:
-                index = rows[snap]
+            for entry in updatable:
+                index = rows[entry['name']]
                 row = self.listbox_installed.get_row_at_index(index)
                 self.listbox_installed.select_row(row)
 
@@ -59,14 +60,18 @@ class WSMApp():
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.unselect_row(row)
 
-    def populate_listbox_available(self, list_box, contents_dict):
+    def populate_listbox_available(self, list_box, snaps_list):
+        # Create dictionary of relevant info.
+        contents_list = []
+        for entry in snaps_list:
+            contents_list.append(entry['name'])
         rows = {}
         index = 0
-        for snap in sorted(contents_dict.keys()):
-            row = setupui.AvailableSnapRow([snap, contents_dict[snap]])
+        for snap in sorted(contents_list):
+            row = setupui.AvailableSnapRow(snap)
             list_box.add(row)
             install_button = row.button_install_offline
-            install_button.connect("clicked", Handler.on_install_button_clicked, snap)
+            install_button.connect("clicked", handler.Handler.on_install_button_clicked, snap)
             rows[snap] = index
             index += 1
         list_box.show_all()
@@ -102,9 +107,9 @@ class WSMApp():
     wis_vp = Gtk.Viewport()
     wis_vp.add_child(builder, listbox_installed)
     window_installed_snaps.add_child(builder, wis_vp)
-    installed_snaps = snapctl.api_get_snap_list()
+    #installed_snaps = snapctl.api_get_snap_list()
+    installed_snaps = snapd.snap.list()
     rows = setupui.populate_listbox_installed(listbox_installed, installed_snaps)
-
     was_vp = Gtk.Viewport()
     was_vp.add_child(builder, listbox_available)
     window_available_snaps.add_child(builder, was_vp)

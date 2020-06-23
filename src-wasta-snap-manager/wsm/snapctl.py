@@ -11,27 +11,6 @@ from pathlib import Path
 from wsm.snapd import snap
 
 
-def api_get_snap_list():
-    result = snap.list()
-    snaps_list_dict = {}
-    for s in result:
-        try:
-            icon = s['icon']
-        except KeyError:
-            icon = '/usr/share/icons/gnome/scalable/places/poi-marker.svg'
-        snaps_list_dict[s['name']] = {
-            'name': s['name'],
-            'icon': icon,
-            'summary': s['summary'],
-            'revision': s['revision'],
-            'confinement': s['confinement']
-        }
-    return snaps_list_dict
-
-def api_get_snap_info(snap):
-    result = snap.info(snap)
-    return result
-
 def api_get_snap_refresh():
     result = snap.refresh()
     updatable = []
@@ -75,16 +54,17 @@ def snap_store_accessible():
     except urllib.error.URLError:
         return False
 
-def get_dict_from_snaps_folder(dir):
-    dictionary = {}
+def get_list_from_snaps_folder(dir):
+    list = []
     for assertfile in Path(dir).glob('*.assert'):
         # Each assert file is found first, then the corresponding snap file.
         snapfile = Path(dir, assertfile.stem + '.snap')
         if Path(snapfile).exists():
             # The snap file is only included if both the assert and snap exist.
             snap, rev = Path(snapfile).stem.split('_')
-            dictionary[snap] = rev
-    return dictionary
+            dictionary = {'name': snap, 'revision': rev, 'file_path': snapfile}
+            list.append(dictionary)
+    return list
 
 def list_offline_snaps(dir, init=False):
     # Called at 2 different times:
@@ -93,18 +73,18 @@ def list_offline_snaps(dir, init=False):
 
     # Get basename of given dir.
     basename = Path(dir).name
-    offline_dict = {}
+    offline_list = []
 
     # Determine if it's a wasta-offline folder.
     if init and basename != 'wasta-offline':
         # Initial folder is user's home folder.
-        return offline_dict
+        return offline_list
 
     # Get arch in order to search correct wasta-offline folders.
     arch = platform.machine()
     if arch != 'x86_64':
         print("Arch", arch, "not supported yet for offline updates.")
-        return offline_dict
+        return offline_list
     else:
         arch = 'amd64'
 
@@ -119,8 +99,10 @@ def list_offline_snaps(dir, init=False):
             folder_path = Path(dir, 'local-cache', 'snaps', folder)
         if folder_path.exists():
             # Add new dictionary from folder to existing one.
-            offline_dict.update(get_dict_from_snaps_folder(folder_path))
-    return offline_dict
+            #offline_dict.update(get_dict_from_snaps_folder(folder_path))
+            #print(folder_path)
+            offline_list += get_list_from_snaps_folder(folder_path)
+    return offline_list
 
 def get_offline_updates(available):
     # Both 'available' and 'installed' are dictionaries, {'snap': 'rev'}.
@@ -141,11 +123,10 @@ def get_online_updates(snap):
         print("Error during snap refresh.")
         return 13
 
-def get_offline_updatable_snaps(installed_snaps_dict, offline_snaps_dict):
-    updatable = []
-    for snap in installed_snaps_dict.keys():
-        rev = installed_snaps_dict[snap]['revision']
-        if snap in offline_snaps_dict:
-            if offline_snaps_dict[snap] > rev:
-                updatable.append(snap)
-    return updatable
+def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
+    updatable_snaps_list = []
+    for inst in installed_snaps_list:
+        for offl in offline_snaps_list:
+            if offl['name'] == inst['name'] and offl['revision'] > inst['revision']:
+                updatable_snaps_list.append(offl)
+    return updatable_snaps_list
