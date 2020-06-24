@@ -11,32 +11,9 @@ from pathlib import Path
 from wsm.snapd import snap
 
 
-def api_get_snap_refresh():
-    result = snap.refresh()
-    updatable = []
-    for s in result:
-        updatable.append(s['name'])
+def get_snap_refresh_list():
+    updatable = [s['name'] for s in snap.refresh_list()]
     return updatable
-
-def install_snap(snap_file_path):
-    base, ext = os.path.splitext(snap_file_path)
-    assert_file_path = base + '.assert'
-
-    snap_file = Path(snap_file_path)
-    assert_file = Path(assert_file_path)
-    if not assert_file.is_file() or not snap_file.is_file():
-        return 10
-    try:
-        subprocess.run(['pkexec', 'snap', 'ack', assert_file_path])
-    except:
-        print("Assert file not accepted.")
-        return 11
-    try:
-        subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
-    except:
-        # What are the possible errors here?
-        print("Error during snap install from ", snap_file_path)
-        return 12
 
 def add_item_to_update_list(*args):
     # Convert list to 'set' type to eliminate duplicates.
@@ -58,7 +35,7 @@ def get_list_from_snaps_folder(dir):
     list = []
     for assertfile in Path(dir).glob('*.assert'):
         # Each assert file is found first, then the corresponding snap file.
-        snapfile = Path(dir, assertfile.stem + '.snap')
+        snapfile = str(Path(dir, assertfile.stem + '.snap'))
         if Path(snapfile).exists():
             # The snap file is only included if both the assert and snap exist.
             snap, rev = Path(snapfile).stem.split('_')
@@ -104,6 +81,14 @@ def list_offline_snaps(dir, init=False):
             offline_list += get_list_from_snaps_folder(folder_path)
     return offline_list
 
+def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
+    updatable_snaps_list = []
+    for inst in installed_snaps_list:
+        for offl in offline_snaps_list:
+            if offl['name'] == inst['name'] and offl['revision'] > inst['revision']:
+                updatable_snaps_list.append(offl)
+    return updatable_snaps_list
+
 def get_offline_updates(available):
     # Both 'available' and 'installed' are dictionaries, {'snap': 'rev'}.
     installed = get_installed_snaps()
@@ -116,17 +101,33 @@ def get_offline_updates(available):
                 update_list = add_item_to_update_list(snap, update_list)
     return update_dict
 
-def get_online_updates(snap):
+def update_snap_online(snap):
+    print('$ pkexec snap refresh', snap)
+    return
     try:
         subprocess.run(['pkexec', 'snap', 'refresh', snap])
     except:
         print("Error during snap refresh.")
         return 13
 
-def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
-    updatable_snaps_list = []
-    for inst in installed_snaps_list:
-        for offl in offline_snaps_list:
-            if offl['name'] == inst['name'] and offl['revision'] > inst['revision']:
-                updatable_snaps_list.append(offl)
-    return updatable_snaps_list
+def install_snap_offline(snap_file_path):
+    print('$ snap install', snap_file_path)
+    return
+    base, ext = os.path.splitext(snap_file_path)
+    assert_file_path = base + '.assert'
+
+    snap_file = Path(snap_file_path)
+    assert_file = Path(assert_file_path)
+    if not assert_file.is_file() or not snap_file.is_file():
+        return 10
+    try:
+        subprocess.run(['pkexec', 'snap', 'ack', assert_file_path])
+    except:
+        print("Assert file not accepted.")
+        return 11
+    try:
+        subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
+    except:
+        # What are the possible errors here?
+        print("Error during snap install from ", snap_file_path)
+        return 12

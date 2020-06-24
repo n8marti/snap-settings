@@ -17,12 +17,7 @@ from wsm import snapd
 
 
 class WSMApp():
-    def installed_on_system(self, installed):
-        installed_on_system = installed
-        return installed
-
     def select_offline_update_rows(self, source_folder, init=False):
-        installed_snaps = self.installed_snaps
         rows = self.rows
         # Determine if it's a wasta-offline folder.
         basename = Path(source_folder).name
@@ -31,20 +26,23 @@ class WSMApp():
             offline_dict = {}
             return offline_dict
         offline_snaps = snapctl.list_offline_snaps(source_folder)
+        updatable_offline = []
         if len(offline_snaps) > 0:
-            updatable = snapctl.get_offline_updatable_snaps(installed_snaps, offline_snaps)
+            updatable = snapctl.get_offline_updatable_snaps(self.installed_snaps, offline_snaps)
             for entry in updatable:
+                updatable_offline.append(entry['name'])
                 index = rows[entry['name']]
                 row = self.listbox_installed.get_row_at_index(index)
                 self.listbox_installed.select_row(row)
+        return updatable_offline
 
     def select_online_update_rows(self):
         installed_snaps = self.installed_snaps
         rows = self.rows
-        global updatable_online
-        if len(updatable_online) == 0:
-            updatable_online = snapctl.api_get_snap_refresh()
-        for snap in updatable_online:
+        #global updatable_online
+        if len(self.updatable_online) == 0:
+            updatable_online = snapctl.get_snap_refresh_list()
+        for snap in self.updatable_online:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.select_row(row)
@@ -52,10 +50,10 @@ class WSMApp():
     def deselect_online_update_rows(self):
         installed_snaps = self.installed_snaps
         rows = self.rows
-        global updatable_online
-        if len(updatable_online) == 0:
-            updatable_online = snapctl.api_get_snap_refresh()
-        for snap in updatable_online:
+        #global updatable_online
+        if len(self.updatable_online) == 0:
+            self.updatable_online = snapctl.get_snap_refresh_list()
+        for snap in self.updatable_online:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.unselect_row(row)
@@ -93,7 +91,7 @@ class WSMApp():
     window = builder.get_object('window_snap_manager')
 
     # Make GUI initial adjustments.
-    start_folder = setupui.guess_offline_source_folder()
+    user, start_folder = setupui.guess_offline_source_folder()
     button_source_offline.set_current_folder(start_folder)
 
     # Add runtime widgets.
@@ -121,5 +119,5 @@ class WSMApp():
 
 app = WSMApp()
 # Adjust GUI in case of found 'wasta-offline' folder.
-app.select_offline_update_rows(app.start_folder, init=True)
-updatable_online = snapctl.api_get_snap_refresh()
+app.updatable_offline = app.select_offline_update_rows(app.start_folder, init=True)
+app.updatable_online = snapctl.get_snap_refresh_list()

@@ -46,7 +46,7 @@ class Snap():
         result = self.session.get(self.fake_http + payload).json()['result']
         return result
 
-    def refresh(self):
+    def refresh_list(self):
         payload = '/v2/find?select=refresh'
         result = self.session.get(self.fake_http + payload).json()['result']
         return result

@@ -9,6 +9,8 @@ from gi.repository import Gtk
 from gi.repository import Pango
 from pathlib import Path
 
+from wsm import wsmapp
+
 
 class InstalledSnapRow(Gtk.ListBoxRow):
     def __init__(self, data):
@@ -139,4 +141,4 @@ def guess_offline_source_folder():
             except IndexError:
                 # As a last resort just choose $HOME.
                 begin = Path('/home/' + user)
-    return begin.as_posix()
+    return user, begin.as_posix()
