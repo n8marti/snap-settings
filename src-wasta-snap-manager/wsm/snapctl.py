@@ -1,13 +1,12 @@
-# Snapd-related functions.
+# Utility functions module.
 
-import os
-# TODO: use pathlib instead of os?
 import platform
 import subprocess
 import urllib.request
 
 from pathlib import Path
 
+from wsm import wsmapp
 from wsm.snapd import snap
 
 
@@ -23,13 +22,6 @@ def add_item_to_update_list(*args):
     # Convert back to list before returning.
     update_list = list(update_set)
     return update_list
-
-def snap_store_accessible():
-    try:
-        urllib.request.urlopen('https://api.snapcraft.io', data=None, timeout=3)
-        return True
-    except urllib.error.URLError:
-        return False
 
 def get_list_from_snaps_folder(dir):
     list = []
@@ -111,12 +103,13 @@ def update_snap_online(snap):
         return 13
 
 def install_snap_offline(snap_file_path):
-    print('$ snap install', snap_file_path)
+    print('$ snap install', snap_file_path, '...')
     return
-    base, ext = os.path.splitext(snap_file_path)
-    assert_file_path = base + '.assert'
-
+    #base, ext = os.path.splitext(snap_file_path)
     snap_file = Path(snap_file_path)
+    base = snap_file.stem
+    ext = snap_file.suffix
+    assert_file_path = base + '.assert'
     assert_file = Path(assert_file_path)
     if not assert_file.is_file() or not snap_file.is_file():
         return 10
@@ -131,3 +124,10 @@ def install_snap_offline(snap_file_path):
         # What are the possible errors here?
         print("Error during snap install from ", snap_file_path)
         return 12
+
+def snap_store_accessible():
+    try:
+        urllib.request.urlopen('https://api.snapcraft.io', data=None, timeout=3)
+        return True
+    except urllib.error.URLError:
+        return False

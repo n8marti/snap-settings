@@ -49,6 +49,9 @@ class Snap():
     def refresh_list(self):
         payload = '/v2/find?select=refresh'
         result = self.session.get(self.fake_http + payload).json()['result']
+        if type(result) is dict:
+            print(result['message'])
+            result = []
         return result
 
 
