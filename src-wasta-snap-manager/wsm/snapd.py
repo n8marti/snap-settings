@@ -42,7 +42,7 @@ class Snap():
         return result
 
     def info(self, snap):
-        payload = '/v2/snaps' + snap
+        payload = '/v2/snaps/' + snap
         result = self.session.get(self.fake_http + payload).json()['result']
         return result
 

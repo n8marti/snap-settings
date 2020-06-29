@@ -1,7 +1,10 @@
-# Utility functions module.
+""" Utility functions module. """
 
+import os
 import platform
+import re
 import subprocess
+import tempfile
 import urllib.request
 
 from pathlib import Path
@@ -14,11 +17,10 @@ def get_snap_refresh_list():
     updatable = [s['name'] for s in snap.refresh_list()]
     return updatable
 
-def add_item_to_update_list(*args):
+def add_item_to_update_list(item, update_list):
     # Convert list to 'set' type to eliminate duplicates.
-    item_to_add = args[0]
-    update_set = set(args[1])
-    update_set.add(item_to_add)
+    update_set = set(update_list)
+    update_set.add(item)
     # Convert back to list before returning.
     update_list = list(update_set)
     return update_list
@@ -81,6 +83,26 @@ def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
                 updatable_snaps_list.append(offl)
     return updatable_snaps_list
 
+def get_offline_installable_snaps(snaps_folder):
+    # Include this offline folder in update sources list.
+    rows = wsmapp.app.rows
+    installed_snaps_list = wsmapp.app.installed_snaps
+    wsmapp.app.updatable_offline = wsmapp.app.select_offline_update_rows(snaps_folder)
+    offline_snaps_list = list_offline_snaps(snaps_folder)
+    copy = offline_snaps_list
+    # Remove older revisions of each snap from list.
+    for entry in offline_snaps_list:
+        for e in copy:
+            if entry['name'] == e['name'] and int(entry['revision']) < int(e['revision']):
+                offline_snaps_list.remove(entry)
+    # Make list of installable snaps (offline snaps minus installed snaps).
+    wsmapp.app.installable_snaps_list.extend(offline_snaps_list)
+    for offl in offline_snaps_list:
+        for inst in installed_snaps_list:
+            if offl['name'] == inst['name']:
+                wsmapp.app.installable_snaps_list.remove(offl)
+    return wsmapp.app.installable_snaps_list
+
 def get_offline_updates(available):
     # Both 'available' and 'installed' are dictionaries, {'snap': 'rev'}.
     installed = get_installed_snaps()
@@ -93,40 +115,50 @@ def get_offline_updates(available):
                 update_list = add_item_to_update_list(snap, update_list)
     return update_dict
 
-def update_snap_online(snap):
-    print('$ pkexec snap refresh', snap)
-    return
-    try:
-        subprocess.run(['pkexec', 'snap', 'refresh', snap])
-    except:
-        print("Error during snap refresh.")
-        return 13
-
-def install_snap_offline(snap_file_path):
-    print('$ snap install', snap_file_path, '...')
-    snap_file = Path(snap_file_path)
-    base = snap_file.stem
-    ext = snap_file.suffix
-    assert_file_path = base + '.assert'
-    assert_file = Path(assert_file_path)
-    return
-    if not assert_file.is_file() or not snap_file.is_file():
-        return 10
-    try:
-        subprocess.run(['pkexec', 'snap', 'ack', assert_file_path])
-    except:
-        print("Assert file not accepted.")
-        return 11
-    try:
-        subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
-    except:
-        # What are the possible errors here?
-        print("Error during snap install from ", snap_file_path)
-        return 12
-
 def snap_store_accessible():
     try:
         urllib.request.urlopen('https://api.snapcraft.io', data=None, timeout=3)
         return True
     except urllib.error.URLError:
+        return False
+
+def cat_yaml(snapfile):
+    # Data needed: 'base', 'confinement', 'prerequisites'
+    yaml = 'meta/snap.yaml'
+    DEVNULL = open(os.devnull, 'w')
+    with tempfile.TemporaryDirectory() as dest:
+        subprocess.run(
+            ['unsquashfs', '-n',  '-force', '-dest', dest, snapfile, '/' + yaml],
+            stdout=DEVNULL
+        )
+        with open(Path(dest, yaml)) as file:
+            return file.read()
+
+def get_offline_snap_details(snapfile):
+    contents = cat_yaml(snapfile).splitlines()
+    p = Path(snapfile)
+    name, revision = p.stem.split('_')
+    output_dict = {'name': name}
+    output_dict['revision'] = revision
+    output_dict['base'] = 'core' # overwritten if 'base' specified in yaml
+    for line in contents:
+        if re.match('.*base\:.*', line):
+            output_dict['base'] = line.split(':')[1].strip()
+        elif re.match('.*confinement\:.*', line):
+            output_dict['confinement'] = line.split(':')[1].strip()
+        elif re.match('.*default\-provider\:.*', line):
+            # TODO: It might be possible to have > 1 default-providers!
+            output_dict['prerequisites'] = line.split(':')[1].strip()
+        else:
+            continue
+    return output_dict
+
+def snap_is_installed(snap_name):
+    response = snap.info(snap_name)
+    try:
+        if response['name'] == snap_name:
+            return True
+        else: # maybe not possible?
+            return False
+    except KeyError:
         return False

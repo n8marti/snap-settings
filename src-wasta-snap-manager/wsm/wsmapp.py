@@ -103,7 +103,7 @@ class WSMApp():
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.select_row(row)
             box_row = row.get_child()
-            row.label_update_note.show()
+            #row.label_update_note.show()
 
     def deselect_online_update_rows(self):
         installed_snaps = self.installed_snaps
@@ -116,6 +116,9 @@ class WSMApp():
             self.listbox_installed.unselect_row(row)
 
     def populate_listbox_available(self, list_box, snaps_list):
+        # Remove placeholder row.
+        self.listbox_available.remove(app.av_row_init)
+
         # Create dictionary of relevant info.
         contents_list = []
         for entry in snaps_list:
@@ -137,3 +140,5 @@ app = WSMApp()
 
 # Adjust GUI in case of found 'wasta-offline' folder.
 app.updatable_offline = app.select_offline_update_rows(app.start_folder, init=True)
+app.installable_snaps_list = util.get_offline_installable_snaps(app.start_folder)
+app.populate_listbox_available(app.listbox_available, app.installable_snaps_list)

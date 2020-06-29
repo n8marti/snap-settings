@@ -31,6 +31,8 @@ class Handler():
 
     def on_button_source_offline_file_set(self, folder_obj):
         folder = folder_obj.get_filename()
+        installable_list = util.get_offline_installable_snaps(folder)
+        """
         # Include this offline folder in update sources list.
         rows = wsmapp.app.rows
         installed_snaps_list = wsmapp.app.installed_snaps
@@ -48,9 +50,9 @@ class Handler():
             for inst in installed_snaps_list:
                 if offl['name'] == inst['name']:
                     wsmapp.app.installable_snaps_list.remove(offl)
-        # Remove placeholder row, then populate available snaps rows.
-        wsmapp.app.listbox_available.remove(wsmapp.app.av_row_init)
-        wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, wsmapp.app.installable_snaps_list)
+        """
+        # Populate available snaps rows.
+        wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, installable_list)
 
     def on_button_update_snaps_clicked(self, *args):
         target = worker.handle_button_update_snaps_clicked
