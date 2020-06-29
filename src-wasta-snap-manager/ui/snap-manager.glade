@@ -8,6 +8,8 @@
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Wasta [Snap] Manager</property>
     <property name="window_position">center</property>
+    <property name="default_width">800</property>
+    <property name="default_height">300</property>
     <signal name="destroy" handler="gtk_widget_destroy" swapped="no"/>
     <child>
       <placeholder/>
@@ -70,7 +72,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkGrid">
+          <object class="GtkGrid" id="grid_source">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -85,7 +87,6 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="xalign">0.15000000596046448</property>
                 <signal name="toggled" handler="on_button_source_online_toggled" swapped="no"/>
               </object>
               <packing>
@@ -280,7 +281,7 @@
                     <property name="margin_bottom">10</property>
                     <property name="shadow_type">in</property>
                     <property name="min_content_height">225</property>
-                    <property name="max_content_height">225</property>
+                    <property name="propagate_natural_height">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>

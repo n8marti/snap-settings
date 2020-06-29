@@ -26,7 +26,7 @@ sys.path.append(modules_dir)
 if __name__ == '__main__':
 
     from wsm import wsmapp
-    wsmapp.app.window.show_all()
+    wsmapp.app.window.show()
 
     status = wsmapp.Gtk.main()
     sys.exit(status)

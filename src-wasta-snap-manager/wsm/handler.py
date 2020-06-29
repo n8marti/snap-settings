@@ -8,7 +8,7 @@ import threading
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-from wsm import snapctl
+from wsm import util
 from wsm import worker
 from wsm import wsmapp
 
@@ -35,7 +35,7 @@ class Handler():
         rows = wsmapp.app.rows
         installed_snaps_list = wsmapp.app.installed_snaps
         wsmapp.app.updatable_offline = wsmapp.app.select_offline_update_rows(folder)
-        offline_snaps_list = snapctl.list_offline_snaps(folder)
+        offline_snaps_list = util.list_offline_snaps(folder)
         copy = offline_snaps_list
         # Remove older revisions of each snap from list.
         for entry in offline_snaps_list:
@@ -48,6 +48,8 @@ class Handler():
             for inst in installed_snaps_list:
                 if offl['name'] == inst['name']:
                     wsmapp.app.installable_snaps_list.remove(offl)
+        # Remove placeholder row, then populate available snaps rows.
+        wsmapp.app.listbox_available.remove(wsmapp.app.av_row_init)
         wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, wsmapp.app.installable_snaps_list)
 
     def on_button_update_snaps_clicked(self, *args):

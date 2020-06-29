@@ -104,13 +104,12 @@ def update_snap_online(snap):
 
 def install_snap_offline(snap_file_path):
     print('$ snap install', snap_file_path, '...')
-    return
-    #base, ext = os.path.splitext(snap_file_path)
     snap_file = Path(snap_file_path)
     base = snap_file.stem
     ext = snap_file.suffix
     assert_file_path = base + '.assert'
     assert_file = Path(assert_file_path)
+    return
     if not assert_file.is_file() or not snap_file.is_file():
         return 10
     try:

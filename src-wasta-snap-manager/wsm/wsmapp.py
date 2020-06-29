@@ -12,7 +12,7 @@ from gi.repository import Gtk
 
 from wsm import handler
 from wsm import setupui
-from wsm import snapctl
+from wsm import util
 from wsm import snapd
 
 
@@ -29,6 +29,7 @@ class WSMApp():
         # Get widgets from glade file.
         self.builder = Gtk.Builder()
         self.builder.add_from_file(ui_dir + '/snap-manager.glade')
+        self.grid_source = self.builder.get_object('grid_source')
         self.button_source_online = self.builder.get_object('button_source_online')
         self.label_button_source_online = self.builder.get_object('label_button_source_online')
         self.button_source_offline = self.builder.get_object('button_source_offline')
@@ -47,17 +48,28 @@ class WSMApp():
         self.listbox_available = Gtk.ListBox()
         self.listbox_available.set_selection_mode(Gtk.SelectionMode.NONE)
 
-        # Create viewports for Install & Available panes.
+        # Create viewports for Installed & Available panes.
         self.wis_vp = Gtk.Viewport()
         self.wis_vp.add_child(self.builder, self.listbox_installed)
         self.window_installed_snaps.add_child(self.builder, self.wis_vp)
-        #installed_snaps = snapctl.api_get_snap_list()
         self.installed_snaps = snapd.snap.list()
         self.rows = setupui.populate_listbox_installed(self.listbox_installed, self.installed_snaps)
         self.was_vp = Gtk.Viewport()
         self.was_vp.add_child(self.builder, self.listbox_available)
         self.window_available_snaps.add_child(self.builder, self.was_vp)
+        self.window_installed_snaps.show()
+        self.window_available_snaps.show()
+        self.wis_vp.show()
+
         # List populated later with self.populate_listbox_available().
+        #   But initial entry added here for user guidance.
+        self.av_row_init = Gtk.ListBoxRow()
+        self.listbox_available.add(self.av_row_init)
+        text = "<span style=\"italic\">Please select an offline folder above.</span>"
+        self.label_av_row_init = Gtk.Label(text)
+        self.label_av_row_init.set_property("use-markup", True)
+        self.av_row_init.add(self.label_av_row_init)
+        self.was_vp.show_all()
 
         # Connect GUI signals to Handler class.
         self.builder.connect_signals(handler.h)
@@ -70,10 +82,10 @@ class WSMApp():
             # Intial run and no 'wasta-offline' folder found. Return empty dictionary.
             offline_dict = {}
             return offline_dict
-        offline_snaps = snapctl.list_offline_snaps(source_folder)
+        offline_snaps = util.list_offline_snaps(source_folder)
         updatable_offline = []
         if len(offline_snaps) > 0:
-            updatable = snapctl.get_offline_updatable_snaps(self.installed_snaps, offline_snaps)
+            updatable = util.get_offline_updatable_snaps(self.installed_snaps, offline_snaps)
             for entry in updatable:
                 updatable_offline.append(entry['name'])
                 index = rows[entry['name']]
@@ -85,17 +97,19 @@ class WSMApp():
         installed_snaps = self.installed_snaps
         rows = self.rows
         if len(self.updatable_online) == 0:
-            self.updatable_online = snapctl.get_snap_refresh_list()
+            self.updatable_online = util.get_snap_refresh_list()
         for snap in self.updatable_online:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.select_row(row)
+            box_row = row.get_child()
+            row.label_update_note.show()
 
     def deselect_online_update_rows(self):
         installed_snaps = self.installed_snaps
         rows = self.rows
         if len(self.updatable_online) == 0:
-            self.updatable_online = snapctl.get_snap_refresh_list()
+            self.updatable_online = util.get_snap_refresh_list()
         for snap in self.updatable_online:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)

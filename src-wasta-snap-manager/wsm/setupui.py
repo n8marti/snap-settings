@@ -23,39 +23,41 @@ class InstalledSnapRow(Gtk.ListBoxRow):
         description = data['summary']
         rev_installed = data['revision']
         rev_available = 'N/A'
-        note = 'revision ' + rev_installed + ' -> ' + rev_available
+        note = 'rev. ' + rev_installed + ' < ' + rev_available
         flag = data['confinement']
 
         # Define the row.
-        box_row = Gtk.Box(orientation='horizontal')
-        self.add(box_row)
+        self.box_row = Gtk.Box(orientation='horizontal')
+        self.add(self.box_row)
 
         # Define the various parts of the row box.
-        label_icon = Gtk.Image.new_from_file(icon)
-        box_info = Gtk.Box(orientation='vertical')
+        self.label_icon = Gtk.Image.new_from_file(icon)
+        self.box_info = Gtk.Box(orientation='vertical')
         #label_rev_installed = Gtk.Label(rev_installed)
         #label_rev_available = Gtk.Label(rev_available)
-        label_update_note = Gtk.Label(note)
+        self.label_update_note = Gtk.Label(note)
 
         # Pack the various parts of the row box.
-        box_row.pack_start(label_icon, False, False, 5)
-        box_row.pack_start(box_info, False, False, 5)
+        self.box_row.pack_start(self.label_icon, False, False, 5)
+        self.box_row.pack_start(self.box_info, False, False, 5)
         #box_row.pack_end(label_rev_installed, False, False, 5)
         #box_row.pack_end(label_rev_available, False, False, 5)
-        box_row.pack_end(label_update_note, False, False, 5)
+        self.box_row.pack_end(self.label_update_note, False, False, 5)
 
         # Define the 2 parts of the info box within the row.
-        label_name = Gtk.Label(snap)
-        label_name.set_alignment(0.0, 0.5)
-        label_name.set_markup("<span weight=\"bold\">" + snap + "</span>")
-        label_description = Gtk.Label(description)
-        label_description.set_alignment(0.0, 0.5)
-        label_description.set_ellipsize(Pango.EllipsizeMode.END)
-        label_description.set_max_width_chars(60)
+        self.label_name = Gtk.Label(snap)
+        self.label_name.set_alignment(0.0, 0.5)
+        self.label_name.set_markup("<span weight=\"bold\">" + snap + "</span>")
+        self.label_description = Gtk.Label(description)
+        self.label_description.set_alignment(0.0, 0.5)
+        self.label_description.set_ellipsize(Pango.EllipsizeMode.END)
+        self.label_description.set_max_width_chars(60)
 
         # Pack the 2 parts of the info box into the row box.
-        box_info.pack_start(label_name, False, False, 1)
-        box_info.pack_start(label_description, False, False, 1)
+        self.box_info.pack_start(self.label_name, False, False, 1)
+        self.box_info.pack_start(self.label_description, False, False, 1)
+        self.show_all()
+        self.label_update_note.hide()
 
 class AvailableSnapRow(Gtk.ListBoxRow):
     def __init__(self, data):
@@ -118,8 +120,10 @@ def populate_listbox_installed(list_box, snaps_list):
     for snap in sorted(contents_dict.keys()):
         row = InstalledSnapRow(contents_dict[snap])
         list_box.add(row)
+        row.show()
         rows[snap] = count
         count += 1
+    list_box.show()
     return rows
 
 def guess_offline_source_folder():
