@@ -1,3 +1,4 @@
+""" Functions that run in background threads. """
 # All of these functions run inside of threads and use GLib to communicate back.
 
 import gi
@@ -31,6 +32,7 @@ def handle_button_online_source_toggled(button):
         GLib.idle_add(spinner.start)
         if util.snap_store_accessible():
             text = ''
+            wsmapp.app.updatable_online_list = util.get_snap_refresh_list()
             wsmapp.app.select_online_update_rows()
         else:
             text = 'No connection to the Snap Store.'
@@ -49,7 +51,9 @@ def handle_button_update_snaps_clicked():
     # Make sure on_button_source_online_toggled has finished before continuing.
     handler.h.t_online_check.join()
     obj_rows_selected = wsmapp.app.listbox_installed.get_selected_rows()
-    details_l = wsmapp.app.installable_snaps_list
+    #list = wsmapp.app.installable_snaps_list
+    list = wsmapp.app.updatable_offline_list
+    offline_names = [i['name'] for i in wsmapp.app.updatable_offline_list]
     for row in obj_rows_selected:
         listbox = row.get_parent()
         # child = box; children = icon, box_info, label_update_note
@@ -64,17 +68,26 @@ def handle_button_update_snaps_clicked():
         box_row.pack_end(spinner, False, False, 5)
 
         # Update from offline source first.
-        file_paths = [entry['file_path'] for entry in details_l if entry['name'] == snap_name]
+        file_paths = [i['file_path'] for i in list if i['name'] == snap_name]
+        file_path = Path(file_paths[0])
         label_update_note.hide()
         spinner.show()
         spinner.start()
-        from time import sleep
-        for s in range(3):
-            sleep(1)
-        if snap_name in wsmapp.app.updatable_offline:
-            install_snap_offline(file_paths[0])
+
+        offline_snap_details = (util.get_offline_snap_details(file_path))
+        classic_flag=False
+        try:
+            confinement = offline_snap_details['confinement']
+            if confinement == 'classic':
+                classic_flag=True
+        except KeyError:
+            pass
+
+        if snap_name in offline_names:
+            install_snap_offline(file_path, classic_flag)
+
         # Update from online source.
-        if snap_name in wsmapp.app.updatable_online:
+        if snap_name in wsmapp.app.updatable_online_list:
             update_snap_online(snap_name)
 
         # Post-install.
@@ -99,18 +112,18 @@ def handle_install_button_clicked(button, snap):
     # Get snap and assert files.
     list = wsmapp.app.installable_snaps_list
     # Use list comprehension to get "list" of the single matching item.
-    file_paths = [entry['file_path'] for entry in list if entry['name'] == snap]
+    file_paths = [i['file_path'] for i in list if i['name'] == snap]
     file_path = Path(file_paths[0])
 
     # Read /meta/snap.yaml in snap file to get 'core' and 'prerequisites'.
     # TODO: This only returns 1 preprequisite; i.e. "default-provider: <prerequisite>"
     offline_snap_details = (util.get_offline_snap_details(file_path))
 
-    classic=False
+    classic_flag=False
     try:
         confinement = offline_snap_details['confinement']
         if confinement == 'classic':
-            classic=True
+            classic_flag=True
     except KeyError:
         pass
 
@@ -123,18 +136,20 @@ def handle_install_button_clicked(button, snap):
     if not util.snap_is_installed(base):
         base_paths = [entry['file_path'] for entry in list if entry['name'] == base]
         base_path = Path(base_paths[0])
-        ret += install_snap_offline(base_path, classic)
+        ret += install_snap_offline(base_path, classic_flag)
+        # TODO: if successful, remove base from available list.
     try:
         prereq = offline_snap_details['prerequisites']
         if not util.snap_is_installed(prereq):
             prereq_paths = [entry['file_path'] for entry in list if entry['name'] == prereq]
             prereq_path = Path(prereq_paths[0])
-            ret += install_snap_offline(prereq_path, classic)
+            ret += install_snap_offline(prereq_path, classic_flag)
+            # TODO: if successful, remove prereq from available list.
     except KeyError: # no prerequisites
         pass
 
     # Install offline snap itself.
-    ret += install_snap_offline(file_path, classic)
+    ret += install_snap_offline(file_path, classic_flag)
 
     # Post-install.
     spinner.stop()
@@ -153,7 +168,7 @@ def update_snap_online(snap):
         print("Error during snap refresh.")
         return 13
 
-def install_snap_offline(snap_file, classic):
+def install_snap_offline(snap_file, classic_flag):
     dir = snap_file.parent
     base = snap_file.stem
     name = base.split('_')[0]
@@ -165,7 +180,7 @@ def install_snap_offline(snap_file, classic):
         print('Snap', name, 'not available for offline installation.')
         #if wsmapp.app.button_source_online.get_active() == True:
         print('Install', name, 'from the Snap Store first, then try again.')
-        # TODO: Show message saying how to install it from the Snap Store.
+        # TODO: Display message saying how to install it from the Snap Store.
         return 10
     try:
         print('$ snap ack', assert_file)
@@ -174,7 +189,7 @@ def install_snap_offline(snap_file, classic):
         print("Assert file not accepted.")
         return 11
     try:
-        if classic:
+        if classic_flag:
             print('$ snap install', '--classic', snap_file)
             #subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
             return 0

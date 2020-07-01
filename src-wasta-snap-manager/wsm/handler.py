@@ -1,4 +1,4 @@
-# Signal handler module.
+""" Signal handler module. """
 
 #import concurrent.futures
 import gi
@@ -31,28 +31,20 @@ class Handler():
 
     def on_button_source_offline_file_set(self, folder_obj):
         folder = folder_obj.get_filename()
-        installable_list = util.get_offline_installable_snaps(folder)
-        """
-        # Include this offline folder in update sources list.
-        rows = wsmapp.app.rows
-        installed_snaps_list = wsmapp.app.installed_snaps
-        wsmapp.app.updatable_offline = wsmapp.app.select_offline_update_rows(folder)
-        offline_snaps_list = util.list_offline_snaps(folder)
-        copy = offline_snaps_list
-        # Remove older revisions of each snap from list.
-        for entry in offline_snaps_list:
-            for e in copy:
-                if entry['name'] == e['name'] and int(entry['revision']) < int(e['revision']):
-                    offline_snaps_list.remove(entry)
-        # Make list of installable snaps (offline snaps minus installed snaps).
-        wsmapp.app.installable_snaps_list.extend(offline_snaps_list)
-        for offl in offline_snaps_list:
-            for inst in installed_snaps_list:
-                if offl['name'] == inst['name']:
-                    wsmapp.app.installable_snaps_list.remove(offl)
-        """
+
+        # Remove any existing rows (placeholder, previous folder, etc.).
+        children = wsmapp.app.listbox_available.get_children()
+        for c in children:
+            wsmapp.app.listbox_available.remove(c)
+
+        # Set app-wide variables.
+        wsmapp.app.updatable_offline_list = util.get_offline_updatable_snaps(folder)
+        wsmapp.app.installable_snaps_list = util.get_offline_installable_snaps(folder)
+        wsmapp.app.select_offline_update_rows(folder)
+
         # Populate available snaps rows.
-        wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, installable_list)
+        list = wsmapp.app.installable_snaps_list
+        wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, list)
 
     def on_button_update_snaps_clicked(self, *args):
         target = worker.handle_button_update_snaps_clicked

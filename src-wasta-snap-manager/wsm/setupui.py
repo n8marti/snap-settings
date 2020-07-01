@@ -1,3 +1,4 @@
+""" Setup GUI based on system information. """
 # Gather info about installed and available snaps to generate lists.
 
 import gi
@@ -8,8 +9,6 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Pango
 from pathlib import Path
-
-from wsm import wsmapp
 
 
 class InstalledSnapRow(Gtk.ListBoxRow):

@@ -75,7 +75,9 @@ def list_offline_snaps(dir, init=False):
             offline_list += get_list_from_snaps_folder(folder_path)
     return offline_list
 
-def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
+def get_offline_updatable_snaps(folder):
+    offline_snaps_list = list_offline_snaps(folder)
+    installed_snaps_list = wsmapp.app.installed_snaps_list
     updatable_snaps_list = []
     for inst in installed_snaps_list:
         for offl in offline_snaps_list:
@@ -86,34 +88,25 @@ def get_offline_updatable_snaps(installed_snaps_list, offline_snaps_list):
 def get_offline_installable_snaps(snaps_folder):
     # Include this offline folder in update sources list.
     rows = wsmapp.app.rows
-    installed_snaps_list = wsmapp.app.installed_snaps
-    wsmapp.app.updatable_offline = wsmapp.app.select_offline_update_rows(snaps_folder)
+    installed_snaps_list = wsmapp.app.installed_snaps_list
     offline_snaps_list = list_offline_snaps(snaps_folder)
-    copy = offline_snaps_list
-    # Remove older revisions of each snap from list.
-    for entry in offline_snaps_list:
-        for e in copy:
-            if entry['name'] == e['name'] and int(entry['revision']) < int(e['revision']):
-                offline_snaps_list.remove(entry)
-    # Make list of installable snaps (offline snaps minus installed snaps).
-    wsmapp.app.installable_snaps_list.extend(offline_snaps_list)
-    for offl in offline_snaps_list:
-        for inst in installed_snaps_list:
-            if offl['name'] == inst['name']:
-                wsmapp.app.installable_snaps_list.remove(offl)
-    return wsmapp.app.installable_snaps_list
+    copy1 = copy2 = offline_snaps_list
+    # Remove older revisions of each snap from offline_snaps_list.
+    for e1 in copy1:
+        for e2 in copy2:
+            if e1['name'] == e2['name']:
+                if int(e1['revision']) < int(e2['revision']):
+                    offline_snaps_list.remove(e1)
+                elif int(e2['revision']) < int(e1['revision']):
+                    offline_snaps_list.remove(e2)
 
-def get_offline_updates(available):
-    # Both 'available' and 'installed' are dictionaries, {'snap': 'rev'}.
-    installed = get_installed_snaps()
-    global update_dict
-    for snap, details in installed.items():
-        rev_installed = details[0]
-        if snap in available.keys():
-            rev_available = available[snap]
-            if rev_available > rev_installed:
-                update_list = add_item_to_update_list(snap, update_list)
-    return update_dict
+    # Make list of installable snaps (offline snaps minus installed snaps).
+    installable_snaps_list = []
+    inst_names = [i['name'] for i in installed_snaps_list]
+    for item in offline_snaps_list:
+        if item['name'] not in inst_names:
+            installable_snaps_list.append(item)
+    return installable_snaps_list
 
 def snap_store_accessible():
     try:
