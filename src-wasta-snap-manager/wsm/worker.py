@@ -66,24 +66,24 @@ def handle_button_update_snaps_clicked():
 
         spinner = Gtk.Spinner(halign=Gtk.Align.START, valign=Gtk.Align.CENTER)
         box_row.pack_end(spinner, False, False, 5)
-
-        # Update from offline source first.
-        file_paths = [i['file_path'] for i in list if i['name'] == snap_name]
-        file_path = Path(file_paths[0])
         label_update_note.hide()
         spinner.show()
         spinner.start()
 
-        offline_snap_details = (util.get_offline_snap_details(file_path))
-        classic_flag=False
-        try:
-            confinement = offline_snap_details['confinement']
-            if confinement == 'classic':
-                classic_flag=True
-        except KeyError:
-            pass
-
+        # Update from offline source first.
         if snap_name in offline_names:
+            file_paths = [i['file_path'] for i in list if i['name'] == snap_name]
+            file_path = Path(file_paths[0])
+
+            offline_snap_details = (util.get_offline_snap_details(file_path))
+            classic_flag=False
+            try:
+                confinement = offline_snap_details['confinement']
+                if confinement == 'classic':
+                    classic_flag=True
+            except KeyError:
+                pass
+
             install_snap_offline(file_path, classic_flag)
 
         # Update from online source.
@@ -160,12 +160,12 @@ def handle_install_button_clicked(button, snap):
         button.show()
 
 def update_snap_online(snap):
-    print('$ pkexec snap refresh', snap)
-    return
+    #print('$ pkexec snap refresh', snap)
     try:
         subprocess.run(['pkexec', 'snap', 'refresh', snap])
-    except:
-        print("Error during snap refresh.")
+    except Exception as e:
+        print("Error during snap refresh:")
+        print(e)
         return 13
 
 def install_snap_offline(snap_file, classic_flag):
@@ -178,26 +178,28 @@ def install_snap_offline(snap_file, classic_flag):
 
     if not assert_file.is_file() or not snap_file.is_file():
         print('Snap', name, 'not available for offline installation.')
-        #if wsmapp.app.button_source_online.get_active() == True:
-        print('Install', name, 'from the Snap Store first, then try again.')
+        print('Try installing', name, 'from the Snap Store instead.')
         # TODO: Display message saying how to install it from the Snap Store.
         return 10
     try:
-        print('$ snap ack', assert_file)
-        #subprocess.run(['pkexec', 'snap', 'ack', assert_file_path])
-    except:
-        print("Assert file not accepted.")
+        subprocess.run(
+            ['pkexec', 'snap', 'ack', assert_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
+    except Exception as e:
+        print("Assert file not accepted:")
+        print(e)
         return 11
     try:
         if classic_flag:
-            print('$ snap install', '--classic', snap_file)
-            #subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
+            subprocess.run(['pkexec', 'snap', 'install', '--classic', snap_file])
             return 0
         else:
-            print('$ snap install', snap_file)
-            #subprocess.run(['pkexec', 'snap', 'install', snap_file_path])
+            subprocess.run(['pkexec', 'snap', 'install', snap_file])
             return 0
-    except:
+    except Exception as e:
         # What are the possible errors here?
-        print("Error during snap install from ", snap_file_path)
+        print("Error during snap install from ", snap_file + ':')
+        print(e)
         return 12

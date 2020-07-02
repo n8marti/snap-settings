@@ -79,9 +79,10 @@ def get_offline_updatable_snaps(folder):
     offline_snaps_list = list_offline_snaps(folder)
     installed_snaps_list = wsmapp.app.installed_snaps_list
     updatable_snaps_list = []
-    for inst in installed_snaps_list:
-        for offl in offline_snaps_list:
-            if offl['name'] == inst['name'] and offl['revision'] > inst['revision']:
+    for offl in offline_snaps_list:
+        for inst in installed_snaps_list:
+            print(inst['name'], inst['revision'], '|', offl['name'], offl['revision'])
+            if offl['name'] == inst['name'] and int(offl['revision']) > int(inst['revision']):
                 updatable_snaps_list.append(offl)
     return updatable_snaps_list
 
