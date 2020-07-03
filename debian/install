@@ -7,7 +7,7 @@ src-snap-settings/ui                    usr/share/snap-settings
 
 src-wasta-snap-manager/bin              usr
 src-wasta-snap-manager/applications     usr/share
-src-wasta-snap-manager/locale           usr/share
+#src-wasta-snap-manager/locale           usr/share
 src-wasta-snap-manager/actions          usr/share/polkit-1
 #src-wasta-snap-manager/po               usr/share/snap-settings
 src-wasta-snap-manager/ui               usr/share/wasta-snap-manager
