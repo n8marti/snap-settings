@@ -46,7 +46,8 @@ class WSMApp():
 
         # Add runtime widgets.
         self.listbox_installed = Gtk.ListBox()
-        self.listbox_installed.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        #self.listbox_installed.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+        self.listbox_installed.set_selection_mode(Gtk.SelectionMode.NONE)
         self.listbox_installed.set_activate_on_single_click(True)
         self.listbox_available = Gtk.ListBox()
         self.listbox_available.set_selection_mode(Gtk.SelectionMode.NONE)
@@ -88,6 +89,7 @@ class WSMApp():
             return offline_dict
         updatable_offline = self.updatable_offline_list
         if len(updatable_offline) > 0:
+            self.listbox_installed.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
             for entry in updatable_offline:
                 index = rows[entry['name']]
                 row = self.listbox_installed.get_row_at_index(index)
@@ -97,11 +99,13 @@ class WSMApp():
     def select_online_update_rows(self):
         installed_snaps = self.installed_snaps_list
         rows = self.rows
-        for snap in self.updatable_online_list:
-            index = rows[snap]
-            row = self.listbox_installed.get_row_at_index(index)
-            self.listbox_installed.select_row(row)
-            box_row = row.get_child()
+        if len(self.updatable_online_list) > 0:
+            self.listbox_installed.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
+            for snap in self.updatable_online_list:
+                index = rows[snap]
+                row = self.listbox_installed.get_row_at_index(index)
+                self.listbox_installed.select_row(row)
+                box_row = row.get_child()
 
     def deselect_online_update_rows(self):
         installed_snaps = self.installed_snaps_list
@@ -110,8 +114,17 @@ class WSMApp():
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.unselect_row(row)
+        if len(self.updatable_offline_list) == 0:
+            self.listbox_installed.set_selection_mode(Gtk.SelectionMode.NONE)
 
     def populate_listbox_available(self, list_box, snaps_list):
+        rows = {}
+        if len(snaps_list) == 0:
+            if len(self.updatable_online_list) == 0 and len(self.updatable_offline_list) == 0:
+                self.listbox_installed.set_selection_mode(Gtk.SelectionMode.NONE)
+            return rows
+        if len(self.updatable_offline_list) > 0:
+            self.listbox_installed.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         # Create a flattened list of just snap names.
         contents_list = []
         for entry in snaps_list:
@@ -119,7 +132,6 @@ class WSMApp():
         contents_dict = {}
         for entry in snaps_list:
             contents_dict[entry['name']] = entry['file_path']
-        rows = {}
         index = 0
         #for snap in sorted(contents_list):
         for snap in sorted(contents_dict.keys()):

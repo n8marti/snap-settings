@@ -107,6 +107,7 @@ def populate_listbox_installed(list_box, snaps_list):
     # Create dictionary of relevant info: icon, name, description, revision.
     contents_dict = {}
     for entry in snaps_list:
+        # TODO: These icon files don't seem to actually display.
         try:
             icon = entry['icon']
         except KeyError:
