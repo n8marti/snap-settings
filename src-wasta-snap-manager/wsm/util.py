@@ -2,6 +2,7 @@
 
 import os
 import platform
+import pwd
 import re
 import subprocess
 import tempfile
@@ -12,6 +13,27 @@ from pathlib import Path
 from wsm import wsmapp
 from wsm.snapd import snap
 
+
+def guess_offline_source_folder():
+    try:
+        user = pwd.getpwuid(int(os.environ['PKEXEC_UID'])).pw_name
+    except KeyError:
+        user = pwd.getpwuid(os.geteuid()).pw_name
+    # Check for USB device wasta-offline folder.
+    try:
+        begin = sorted(Path('/media/' + user).glob('*/wasta-offline'))[0]
+    except IndexError:
+        try:
+            # Check /mnt. How deep could it be, though?
+            begin = sorted(Path('/mnt').glob('wasta-offline'))[0]
+        except IndexError:
+            try:
+                # Check for VBox shared wasta-offline folder.
+                begin = sorted(Path('/media/').glob('*/wasta-offline'))[0]
+            except IndexError:
+                # As a last resort just choose $HOME.
+                begin = Path('/home/' + user)
+    return user, begin.as_posix()
 
 def get_snap_refresh_list():
     updatable = [s['name'] for s in snap.refresh_list()]
@@ -78,10 +100,10 @@ def list_offline_snaps(dir, init=False):
 def get_offline_updatable_snaps(folder):
     offline_snaps_list = list_offline_snaps(folder)
     installed_snaps_list = wsmapp.app.installed_snaps_list
+    # This list only provides snap names but no other details.
     updatable_snaps_list = []
     for offl in offline_snaps_list:
         for inst in installed_snaps_list:
-            print(inst['name'], inst['revision'], '|', offl['name'], offl['revision'])
             if offl['name'] == inst['name'] and int(offl['revision']) > int(inst['revision']):
                 updatable_snaps_list.append(offl)
     return updatable_snaps_list
@@ -101,7 +123,7 @@ def get_offline_installable_snaps(snaps_folder):
                 elif int(e2['revision']) < int(e1['revision']):
                     offline_snaps_list.remove(e2)
 
-    # Make list of installable snaps (offline snaps minus installed snaps).
+    # Make list of installable snaps.
     installable_snaps_list = []
     inst_names = [i['name'] for i in installed_snaps_list]
     for item in offline_snaps_list:
@@ -143,6 +165,8 @@ def get_offline_snap_details(snapfile):
         elif re.match('.*default\-provider\:.*', line):
             # TODO: It might be possible to have > 1 default-providers!
             output_dict['prerequisites'] = line.split(':')[1].strip()
+        elif re.match('.*summary\:.*', line):
+            output_dict['summary'] = line.split(':')[1].strip()
         else:
             continue
     return output_dict

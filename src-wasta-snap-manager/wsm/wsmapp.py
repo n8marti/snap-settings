@@ -41,7 +41,7 @@ class WSMApp():
         self.window = self.builder.get_object('window_snap_manager')
 
         # Make GUI initial adjustments.
-        self.user, self.start_folder = setupui.guess_offline_source_folder()
+        self.user, self.start_folder = util.guess_offline_source_folder()
         self.button_source_offline.set_current_folder(self.start_folder)
 
         # Add runtime widgets.
@@ -86,13 +86,9 @@ class WSMApp():
             # Intial run and no 'wasta-offline' folder found. Return empty dictionary.
             offline_dict = {}
             return offline_dict
-        #offline_snaps = util.list_offline_snaps(source_folder)
         updatable_offline = self.updatable_offline_list
-        #updatable_offline = []
         if len(updatable_offline) > 0:
-            #updatable = util.get_offline_updatable_snaps(self.installed_snaps_list, offline_snaps)
             for entry in updatable_offline:
-                #updatable_offline.append(entry['name'])
                 index = rows[entry['name']]
                 row = self.listbox_installed.get_row_at_index(index)
                 self.listbox_installed.select_row(row)
@@ -101,34 +97,37 @@ class WSMApp():
     def select_online_update_rows(self):
         installed_snaps = self.installed_snaps_list
         rows = self.rows
-        #if len(self.updatable_online_list) == 0:
-        #    self.updatable_online_list = util.get_snap_refresh_list()
         for snap in self.updatable_online_list:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.select_row(row)
             box_row = row.get_child()
-            #row.label_update_note.show()
 
     def deselect_online_update_rows(self):
         installed_snaps = self.installed_snaps_list
         rows = self.rows
-        #if len(self.updatable_online_list) == 0:
-        #    self.updatable_online_list = util.get_snap_refresh_list()
         for snap in self.updatable_online_list:
             index = rows[snap]
             row = self.listbox_installed.get_row_at_index(index)
             self.listbox_installed.unselect_row(row)
 
     def populate_listbox_available(self, list_box, snaps_list):
-        # Create dictionary of relevant info.
+        # Create a flattened list of just snap names.
         contents_list = []
         for entry in snaps_list:
             contents_list.append(entry['name'])
+        contents_dict = {}
+        for entry in snaps_list:
+            contents_dict[entry['name']] = entry['file_path']
         rows = {}
         index = 0
-        for snap in sorted(contents_list):
-            row = setupui.AvailableSnapRow(snap)
+        #for snap in sorted(contents_list):
+        for snap in sorted(contents_dict.keys()):
+            #row = setupui.AvailableSnapRow(snap)
+            file = contents_dict[snap]
+            details = util.get_offline_snap_details(file)
+            summary = details['summary']
+            row = setupui.AvailableSnapRow(snap, summary)
             list_box.add(row)
             install_button = row.button_install_offline
             install_button.connect("clicked", handler.h.on_install_button_clicked, snap)
@@ -147,4 +146,8 @@ if len(app.updatable_offline_list) > 0:
     app.select_offline_update_rows(app.start_folder, init=True)
 app.installable_snaps_list = util.get_offline_installable_snaps(app.start_folder)
 if len(app.installable_snaps_list) > 0:
+    # Remove any existing rows (placeholder, previous folder, etc.).
+    children = app.listbox_available.get_children()
+    for c in children:
+        app.listbox_available.remove(c)
     app.populate_listbox_available(app.listbox_available, app.installable_snaps_list)

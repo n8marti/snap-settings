@@ -9,6 +9,8 @@ from gi.repository import Gtk, GLib
 gi.require_version("Gtk", "3.0")
 
 from wsm import handler
+from wsm import setupui
+from wsm import snapd
 from wsm import util
 from wsm import wsmapp
 
@@ -137,19 +139,31 @@ def handle_install_button_clicked(button, snap):
         base_paths = [entry['file_path'] for entry in list if entry['name'] == base]
         base_path = Path(base_paths[0])
         ret += install_snap_offline(base_path, classic_flag)
-        # TODO: if successful, remove base from available list.
+        if ret == 0:
+            # TODO: Remove base from available list.
+            # Re-populate installed snaps window.
+            listbox = wsmapp.app.listbox_installed
+            setupui.populate_listbox_installed(listbox, snapd.snap.list())
     try:
         prereq = offline_snap_details['prerequisites']
         if not util.snap_is_installed(prereq):
             prereq_paths = [entry['file_path'] for entry in list if entry['name'] == prereq]
             prereq_path = Path(prereq_paths[0])
             ret += install_snap_offline(prereq_path, classic_flag)
-            # TODO: if successful, remove prereq from available list.
+            if ret == 0:
+                # TODO: if successful, remove prereq from available list.
+                # Re-populate installed snaps window.
+                listbox = wsmapp.app.listbox_installed
+                setupui.populate_listbox_installed(listbox, snapd.snap.list())
     except KeyError: # no prerequisites
         pass
 
     # Install offline snap itself.
     ret += install_snap_offline(file_path, classic_flag)
+    if ret == 0:
+        # Re-populate installed snaps window.
+        listbox = wsmapp.app.listbox_installed
+        setupui.populate_listbox_installed(listbox, snapd.snap.list())
 
     # Post-install.
     spinner.stop()
@@ -163,6 +177,7 @@ def update_snap_online(snap):
     #print('$ pkexec snap refresh', snap)
     try:
         subprocess.run(['pkexec', 'snap', 'refresh', snap])
+        return 0
     except Exception as e:
         print("Error during snap refresh:")
         print(e)

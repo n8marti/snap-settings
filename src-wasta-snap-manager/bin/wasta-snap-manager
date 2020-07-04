@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 
+# TODO:
+#   - Fix problem of icons not being found (maybe ignore them?).
+#   - Incorporate "updatability" test before trying to update a manually-selected snap.
+#   - Add in logging facility.
+#   - Figure out how to launch snap-store with Remove button, since we're using pkexec.
+
 # Verify execution with elevated privileges.
-#import os
-#if os.geteuid() != 0:
-#    print("wasta-snap-manager needs elevated privileges; e.g.:\npkexec", __file__, "\nsudo", __file__)
-#    exit(1)
+import os
+if os.geteuid() != 0:
+    print("wasta-snap-manager needs elevated privileges; e.g.:\npkexec", __file__, "\nsudo", __file__)
+    exit(1)
 
 import sys
 from os.path import abspath
