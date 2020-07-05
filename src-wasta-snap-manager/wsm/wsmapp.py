@@ -39,6 +39,9 @@ class WSMApp():
         self.window_installed_snaps = self.builder.get_object("scrolled_window_installed")
         self.window_available_snaps = self.builder.get_object("scrolled_window_available")
         self.window = self.builder.get_object('window_snap_manager')
+        # Hide label_can_update b/c it seems to be confusing, but saving just in case.
+        self.label_can_update = self.builder.get_object('label_can_update')
+        self.label_can_update.hide()
 
         # Make GUI initial adjustments.
         self.user, self.start_folder = util.guess_offline_source_folder()

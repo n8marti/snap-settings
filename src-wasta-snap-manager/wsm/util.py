@@ -1,5 +1,6 @@
 """ Utility functions module. """
 
+import gi
 import os
 import platform
 import pwd
@@ -8,18 +9,23 @@ import subprocess
 import tempfile
 import urllib.request
 
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
 from pathlib import Path
 
 from wsm import wsmapp
 from wsm.snapd import snap
 
 
-def guess_offline_source_folder():
+def get_user():
     try:
         user = pwd.getpwuid(int(os.environ['PKEXEC_UID'])).pw_name
     except KeyError:
         user = pwd.getpwuid(os.geteuid()).pw_name
-    # Check for USB device wasta-offline folder.
+    return user
+
+def guess_offline_source_folder():
+    user = get_user()
     try:
         begin = sorted(Path('/media/' + user).glob('*/wasta-offline'))[0]
     except IndexError:
@@ -34,6 +40,53 @@ def guess_offline_source_folder():
                 # As a last resort just choose $HOME.
                 begin = Path('/home/' + user)
     return user, begin.as_posix()
+
+def get_snap_icon(snap):
+    name = snap
+    icon_path = ''
+    fallback = '/usr/share/icons/HighContrast/48x48/actions/media-record.png'
+
+    ### 1. Fastest location to try: ${SNAP}/meta/gui.
+    snap_root = Path('/snap', name)
+    subdirs = [s for s in snap_root.iterdir() if s.is_dir()]
+    SNAP = sorted(subdirs, reverse=True)[0]
+    gui_dir = Path(SNAP, 'meta', 'gui')
+    suffixes = ['.png', '.svg']
+    for s in suffixes:
+        filename = Path(gui_dir, 'icon' + s)
+        if filename.is_file():
+            icon_path = filename
+            return str(icon_path)
+
+    ### 2. Next try file name from Gtk.IconTheme.
+    icon_theme = Gtk.IconTheme.get_default()
+    icon = icon_theme.lookup_icon(name, 48, 0)
+    desktop_files = sorted(Path(SNAP).rglob('*' + name +'*.desktop'), reverse=True)
+    desktop_file = desktop_files[0] if desktop_files else Path()
+    if icon:
+        icon_path = icon.get_filename()
+        print('from Gtk.IconTheme:', name, icon_path)
+        return str(icon_path)
+
+    ### 3. Next try finding icon file name in any .desktop file.
+    elif desktop_file.is_file():
+        with open(desktop_file) as file:
+            contents = file.read()
+            icon_line = re.search('^Icon=.*$', contents, re.MULTILINE)
+            if icon_line:
+                print(icon_line.group(0))
+                icon_path = icon_line.group(0).split('=')[1]
+                if icon_path.split('/')[0] == '${SNAP}':
+                    # Relative path given.
+                    icon_path = Path(str(SNAP) + icon_path[7:])
+                    print('from .desktop ${SNAP}:', name, icon_path)
+                    return str(icon_path)
+
+    ### 4. Last resort: choose generic file.
+    if not icon_path:
+        icon_path = fallback
+
+    return str(icon_path)
 
 def get_snap_refresh_list():
     updatable = [s['name'] for s in snap.refresh_list()]

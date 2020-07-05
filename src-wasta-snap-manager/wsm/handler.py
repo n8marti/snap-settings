@@ -52,13 +52,10 @@ class Handler():
         self.t_update_snaps.start()
 
     def on_button_remove_snaps_clicked(self, *args):
-        # TODO: Doesn't work when app runs with pkexec!
-        #   Even in terminal, and even with an annotation entry added in polkit,
-        #   and even with pkexec --user nate, it fails with a segmentation fault.
-        #   Likewise if using sudo --user=nate ...
+        user = util.get_user()
         try:
             proc = subprocess.run(
-                ['/snap/bin/snap-store', '--mode=installed'],
+                ['su', '-c', '/snap/bin/snap-store --mode=installed', user],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )

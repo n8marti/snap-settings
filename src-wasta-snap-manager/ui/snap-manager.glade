@@ -193,7 +193,7 @@
                 <property name="margin_bottom">10</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="label_can_update">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_top">10</property>

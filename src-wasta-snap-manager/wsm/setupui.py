@@ -2,13 +2,16 @@
 # Gather info about installed and available snaps to generate lists.
 
 import gi
+import re
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Pango
+from gi.repository import GdkPixbuf
 from pathlib import Path
 
 from wsm import wsmapp
+from wsm import util
 
 
 class InstalledSnapRow(Gtk.ListBoxRow):
@@ -30,7 +33,13 @@ class InstalledSnapRow(Gtk.ListBoxRow):
         self.add(self.box_row)
 
         # Define the various parts of the row box.
-        self.label_icon = Gtk.Image.new_from_file(icon)
+        image = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            filename=icon,
+            width=32,
+            height=32,
+            preserve_aspect_ratio=True
+        )
+        self.label_icon = Gtk.Image.new_from_pixbuf(image)
         self.box_info = Gtk.Box(orientation='vertical')
         #label_rev_installed = Gtk.Label(rev_installed)
         #label_rev_available = Gtk.Label(rev_available)
@@ -107,15 +116,11 @@ def populate_listbox_installed(list_box, snaps_list):
     # Create dictionary of relevant info: icon, name, description, revision.
     contents_dict = {}
     for entry in snaps_list:
-        # TODO: These icon files don't seem to actually display.
-        try:
-            icon = entry['icon']
-        except KeyError:
-            icon = '/usr/share/icons/gnome/scalable/places/poi-marker.svg'
-
+        name = entry['name']
+        icon_path = util.get_snap_icon(name)
         contents_dict[entry['name']] = {
-            'icon': icon,
-            'name': entry['name'],
+            'icon': icon_path,
+            'name': name,
             'summary': entry['summary'],
             'revision': entry['revision'],
             'confinement': entry['confinement']
