@@ -65,7 +65,6 @@ def get_snap_icon(snap):
     desktop_file = desktop_files[0] if desktop_files else Path()
     if icon:
         icon_path = icon.get_filename()
-        print('from Gtk.IconTheme:', name, icon_path)
         return str(icon_path)
 
     ### 3. Next try finding icon file name in any .desktop file.
@@ -74,12 +73,10 @@ def get_snap_icon(snap):
             contents = file.read()
             icon_line = re.search('^Icon=.*$', contents, re.MULTILINE)
             if icon_line:
-                print(icon_line.group(0))
                 icon_path = icon_line.group(0).split('=')[1]
                 if icon_path.split('/')[0] == '${SNAP}':
                     # Relative path given.
                     icon_path = Path(str(SNAP) + icon_path[7:])
-                    print('from .desktop ${SNAP}:', name, icon_path)
                     return str(icon_path)
 
     ### 4. Last resort: choose generic file.

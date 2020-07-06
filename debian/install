@@ -1,14 +1,14 @@
-src-snap-settings/bin                   usr
-src-snap-settings/applications          usr/share
-src-snap-settings/locale                usr/share
-src-snap-settings/actions               usr/share/polkit-1
-src-snap-settings/po                    usr/share/snap-settings
-src-snap-settings/ui                    usr/share/snap-settings
+snapsettings/bin                usr
+snapsettings/applications       usr/share
+snapsettings/locale             usr/share
+snapsettings/actions            usr/share/polkit-1
+snapsettings/po                 usr/share/snap-settings
+snapsettings/ui                 usr/share/snap-settings
 
-src-wasta-snap-manager/bin              usr
-src-wasta-snap-manager/applications     usr/share
-#src-wasta-snap-manager/locale           usr/share
-src-wasta-snap-manager/actions          usr/share/polkit-1
-#src-wasta-snap-manager/po               usr/share/snap-settings
-src-wasta-snap-manager/ui               usr/share/wasta-snap-manager
-src-wasta-snap-manager/wsm              usr/share/wasta-snap-manager
+wastasnapmanager/bin            usr
+wastasnapmanager/applications   usr/share
+#wastasnapmanager/locale        usr/share
+wastasnapmanager/actions        usr/share/polkit-1
+#wastasnapmanager/po            usr/share/snap-settings
+wastasnapmanager/ui             usr/share/wasta-snap-manager
+wastasnapmanager/wsm            usr/share/wasta-snap-manager

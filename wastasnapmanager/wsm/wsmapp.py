@@ -20,7 +20,7 @@ class WSMApp():
     def __init__(self):
         # Get UI location based on current file location.
         ui_dir = '/usr/share/wasta-snap-manager/ui'
-        if current_file_path.parents[1].parts[-1][0:3] == 'src':
+        if current_file_path.parents[1].stem == 'wastasnapmanager':
             ui_dir = str(current_file_path.parents[1] / 'ui')
 
         # Define app-wide variables.

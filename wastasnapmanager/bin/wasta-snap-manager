@@ -3,6 +3,7 @@
 # TODO: ('-' = to do, '+' = to test)
 #   + Make listbox_installed selectable when:
 #       + listbox_available is populated & if updatable_offline_list is not empty
+#   - Add CLI option to auto-update according to OFFLINE_MODE and W_OFFLINE folder from wasta-offline.
 #   - Add in logging facility.
 
 # Verify execution with elevated privileges.
@@ -20,8 +21,8 @@ bin_path = Path(abspath(__file__))
 bin_dir = bin_path.parents[0]
 bin_parent_dir = bin_path.parents[1]
 
-if bin_parent_dir.parts[-1][0:3] == 'src':
-    # If bin_dir's parent folder is "src*", then use uninstalled location.
+if bin_parent_dir.stem == 'wastasnapmanager':
+    # If bin_dir's parent folder is "wastasnapmanager", then use uninstalled location.
     modules_dir = str(bin_path.parents[1])
 else:
     modules_dir = '/usr/share/wasta-snap-manager'
