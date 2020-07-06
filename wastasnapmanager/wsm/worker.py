@@ -8,8 +8,6 @@ from pathlib import Path
 from gi.repository import Gtk, GLib
 gi.require_version("Gtk", "3.0")
 
-from wsm import handler
-from wsm import setupui
 from wsm import snapd
 from wsm import util
 from wsm import wsmapp
@@ -50,8 +48,6 @@ def handle_button_online_source_toggled(button):
     return
 
 def handle_button_update_snaps_clicked():
-    # Make sure on_button_source_online_toggled has finished before continuing.
-    handler.h.t_online_check.join()
     obj_rows_selected = wsmapp.app.listbox_installed.get_selected_rows()
     #list = wsmapp.app.installable_snaps_list
     list = wsmapp.app.updatable_offline_list
@@ -143,7 +139,7 @@ def handle_install_button_clicked(button, snap):
             # TODO: Remove base from available list.
             # Re-populate installed snaps window.
             listbox = wsmapp.app.listbox_installed
-            setupui.populate_listbox_installed(listbox, snapd.snap.list())
+            wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
     try:
         prereq = offline_snap_details['prerequisites']
         if not util.snap_is_installed(prereq):
@@ -154,7 +150,7 @@ def handle_install_button_clicked(button, snap):
                 # TODO: if successful, remove prereq from available list.
                 # Re-populate installed snaps window.
                 listbox = wsmapp.app.listbox_installed
-                setupui.populate_listbox_installed(listbox, snapd.snap.list())
+                wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
     except KeyError: # no prerequisites
         pass
 
@@ -163,7 +159,7 @@ def handle_install_button_clicked(button, snap):
     if ret == 0:
         # Re-populate installed snaps window.
         listbox = wsmapp.app.listbox_installed
-        setupui.populate_listbox_installed(listbox, snapd.snap.list())
+        wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
 
     # Post-install.
     spinner.stop()

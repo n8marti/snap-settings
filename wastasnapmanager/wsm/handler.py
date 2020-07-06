@@ -47,6 +47,11 @@ class Handler():
         wsmapp.app.rows1 = wsmapp.app.populate_listbox_available(wsmapp.app.listbox_available, list)
 
     def on_button_update_snaps_clicked(self, *args):
+        # Make sure on_button_source_online_toggled has finished before continuing.
+        try:
+            self.t_online_check.join()
+        except AttributeError:
+            pass
         target = worker.handle_button_update_snaps_clicked
         self.t_update_snaps = threading.Thread(target=target)
         self.t_update_snaps.start()

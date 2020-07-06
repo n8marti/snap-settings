@@ -2,16 +2,12 @@
 # Gather info about installed and available snaps to generate lists.
 
 import gi
-import re
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import Pango
 from gi.repository import GdkPixbuf
 from pathlib import Path
-
-from wsm import wsmapp
-from wsm import util
 
 
 class InstalledSnapRow(Gtk.ListBoxRow):
@@ -100,37 +96,3 @@ class AvailableSnapRow(Gtk.ListBoxRow):
         # Pack the 2 parts of the info box into the row box.
         box_info.pack_start(label_name, False, False, 1)
         box_info.pack_start(label_summary, False, False, 1)
-
-
-def populate_listbox_installed(list_box, snaps_list):
-    # Remove any existing rows.
-    try:
-        children = wsmapp.app.listbox_installed.get_children()
-        for c in children:
-            wsmapp.app.listbox_installed.remove(c)
-    except AttributeError:
-        pass
-
-    rows = {}
-    count = 0
-    # Create dictionary of relevant info: icon, name, description, revision.
-    contents_dict = {}
-    for entry in snaps_list:
-        name = entry['name']
-        icon_path = util.get_snap_icon(name)
-        contents_dict[entry['name']] = {
-            'icon': icon_path,
-            'name': name,
-            'summary': entry['summary'],
-            'revision': entry['revision'],
-            'confinement': entry['confinement']
-        }
-    # Use this dictionary to build each listbox row.
-    for snap in sorted(contents_dict.keys()):
-        row = InstalledSnapRow(contents_dict[snap])
-        list_box.add(row)
-        row.show()
-        rows[snap] = count
-        count += 1
-    list_box.show()
-    return rows

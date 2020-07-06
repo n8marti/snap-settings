@@ -6,17 +6,17 @@ import gi
 import json
 import netifaces
 import os
-from pathlib import Path
 import re
 import subprocess
+
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from pathlib import Path
 
 # Verify execution with elevated privileges.
 if os.geteuid() != 0:
     print("snap-settings needs elevated privileges; e.g.:\npkexec snap-settings\nsudo snap-settings")
     exit(1)
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
 
 class Handler:
     def gtk_widget_destroy(self, *args):

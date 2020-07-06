@@ -59,7 +59,8 @@ class WSMApp():
         self.wis_vp = Gtk.Viewport()
         self.wis_vp.add_child(self.builder, self.listbox_installed)
         self.window_installed_snaps.add_child(self.builder, self.wis_vp)
-        self.rows = setupui.populate_listbox_installed(self.listbox_installed, self.installed_snaps_list)
+        #self.rows = setupui.populate_listbox_installed(self.listbox_installed, self.installed_snaps_list)
+        self.rows = populate_listbox_installed(self.listbox_installed, self.installed_snaps_list)
         self.was_vp = Gtk.Viewport()
         self.was_vp.add_child(self.builder, self.listbox_available)
         self.window_available_snaps.add_child(self.builder, self.was_vp)
@@ -151,6 +152,40 @@ class WSMApp():
             row.show_all()
         list_box.show()
         return rows
+
+
+def populate_listbox_installed(list_box, snaps_list):
+    # Remove any existing rows.
+    try:
+        children = list_box.get_children()
+        for c in children:
+            list_box.remove(c)
+    except AttributeError:
+        pass
+
+    rows = {}
+    count = 0
+    # Create dictionary of relevant info: icon, name, description, revision.
+    contents_dict = {}
+    for entry in snaps_list:
+        name = entry['name']
+        icon_path = util.get_snap_icon(name)
+        contents_dict[entry['name']] = {
+            'icon': icon_path,
+            'name': name,
+            'summary': entry['summary'],
+            'revision': entry['revision'],
+            'confinement': entry['confinement']
+        }
+    # Use this dictionary to build each listbox row.
+    for snap in sorted(contents_dict.keys()):
+        row = setupui.InstalledSnapRow(contents_dict[snap])
+        list_box.add(row)
+        row.show()
+        rows[snap] = count
+        count += 1
+    list_box.show()
+    return rows
 
 
 app = WSMApp()
