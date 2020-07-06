@@ -5,7 +5,17 @@
 #       + listbox_available is populated & if updatable_offline_list is not empty
 #   - Add CLI option to auto-update according to OFFLINE_MODE and W_OFFLINE folder from wasta-offline.
 #   - Add in logging facility.
+#       - log directory: ~/.log/wasta-snap-manager/
+#       - log filename: $(date +%F-%H-%M)-$(uname -n).log
+#       - Parts:
+#           - initial log entry
+#           - list installed snaps
+#           - list each snap as it's installed
+#           - snap ack output
+#           - snap install output
+#           - list each snap as it's refreshed
 #   - Unhide "Remove Snaps..." button: it works uninstalled but not when installed.
+#   - Add i10n/l18n
 
 # Verify execution with elevated privileges.
 import os
@@ -16,23 +26,31 @@ if os.geteuid() != 0:
 import sys
 from pathlib import Path
 
-# Add wsm package of modules.
-bin_path = Path(__file__)
-bin_dir = bin_path.parents[0]
-bin_parent_dir = bin_path.parents[1]
 
-if bin_parent_dir.stem == 'wastasnapmanager':
-    # If bin_dir's parent folder is "wastasnapmanager", then use uninstalled location.
-    modules_dir = str(bin_path.parents[1])
-else:
-    modules_dir = '/usr/share/wasta-snap-manager'
-sys.path.append(modules_dir)
+def get_run_mode_and_set_path():
+    bin_path = Path(__file__)
+    bin_dir = bin_path.parents[0]
+    bin_parent_dir = bin_path.parents[1]
+
+    if bin_parent_dir.stem != 'usr':
+        # If bin_dir's parent folder is not "/usr", then use uninstalled location.
+        modules_dir = str(bin_parent_dir)
+        runmode = 'uninstalled'
+    else:
+        modules_dir = '/usr/share/wasta-snap-manager'
+        runmode = 'installed'
+
+    # Add wsm package of modules.
+    sys.path.append(modules_dir)
+
+    return runmode
 
 
 if __name__ == '__main__':
+    runmode = get_run_mode_and_set_path()
 
     from wsm import wsmapp
-    wsmapp.app.window.show()
+    wsmapp.app.runmode = runmode
 
-    status = wsmapp.Gtk.main()
+    status = wsmapp.app.run(sys.argv)
     sys.exit(status)

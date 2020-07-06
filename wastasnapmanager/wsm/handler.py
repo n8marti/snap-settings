@@ -15,7 +15,7 @@ from wsm import wsmapp
 
 class Handler():
     def gtk_widget_destroy(self, *args):
-        Gtk.main_quit()
+        wsmapp.app.quit()
 
     def on_button_settings_clicked(self, *args):
         try:

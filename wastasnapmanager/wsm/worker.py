@@ -140,7 +140,8 @@ def handle_install_button_clicked(button, snap):
             # TODO: Remove base from available list.
             # Re-populate installed snaps window.
             listbox = wsmapp.app.listbox_installed
-            wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+            #wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+            wsmapp.app.populate_listbox_installed(listbox, snapd.snap.list())
     try:
         prereq = offline_snap_details['prerequisites']
         if not util.snap_is_installed(prereq):
@@ -151,7 +152,8 @@ def handle_install_button_clicked(button, snap):
                 # TODO: if successful, remove prereq from available list.
                 # Re-populate installed snaps window.
                 listbox = wsmapp.app.listbox_installed
-                wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+                #wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+                wsmapp.app.populate_listbox_installed(listbox, snapd.snap.list())
     except KeyError: # no prerequisites
         pass
 
@@ -160,7 +162,8 @@ def handle_install_button_clicked(button, snap):
     if ret == 0:
         # Re-populate installed snaps window.
         listbox = wsmapp.app.listbox_installed
-        wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+        #wsmapp.populate_listbox_installed(listbox, snapd.snap.list())
+        wsmapp.app.populate_listbox_installed(listbox, snapd.snap.list())
 
     # Post-install.
     spinner.stop()
