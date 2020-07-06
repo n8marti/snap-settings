@@ -114,7 +114,8 @@ def handle_install_button_clicked(button, snap):
     file_path = Path(file_paths[0])
 
     # Read /meta/snap.yaml in snap file to get 'core' and 'prerequisites'.
-    # TODO: This only returns 1 preprequisite; i.e. "default-provider: <prerequisite>"
+    # TODO: This only returns 1 preprequisite; i.e. "default-provider: <prerequisite>".
+    #       Could there be more?
     offline_snap_details = (util.get_offline_snap_details(file_path))
 
     classic_flag=False

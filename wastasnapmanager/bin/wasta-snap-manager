@@ -5,6 +5,7 @@
 #       + listbox_available is populated & if updatable_offline_list is not empty
 #   - Add CLI option to auto-update according to OFFLINE_MODE and W_OFFLINE folder from wasta-offline.
 #   - Add in logging facility.
+#   - Unhide "Remove Snaps..." button: it works uninstalled but not when installed.
 
 # Verify execution with elevated privileges.
 import os
@@ -13,11 +14,10 @@ if os.geteuid() != 0:
     exit(1)
 
 import sys
-from os.path import abspath
 from pathlib import Path
 
 # Add wsm package of modules.
-bin_path = Path(abspath(__file__))
+bin_path = Path(__file__)
 bin_dir = bin_path.parents[0]
 bin_parent_dir = bin_path.parents[1]
 

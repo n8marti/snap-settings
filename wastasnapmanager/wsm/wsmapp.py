@@ -34,6 +34,7 @@ class WSMApp():
         self.builder.add_from_file(ui_dir + '/snap-manager.glade')
         self.grid_source = self.builder.get_object('grid_source')
         self.button_source_online = self.builder.get_object('button_source_online')
+        self.button_remove_snaps = self.builder.get_object('button_remove_snaps')
         self.label_button_source_online = self.builder.get_object('label_button_source_online')
         self.button_source_offline = self.builder.get_object('button_source_offline')
         self.window_installed_snaps = self.builder.get_object("scrolled_window_installed")
@@ -42,6 +43,8 @@ class WSMApp():
         # Hide label_can_update b/c it seems to be confusing, but saving just in case.
         self.label_can_update = self.builder.get_object('label_can_update')
         self.label_can_update.hide()
+        # Hide button_remove_snaps b/c it doesn't launch right when installed.
+        self.button_remove_snaps.hide()
 
         # Make GUI initial adjustments.
         self.user, self.start_folder = util.guess_offline_source_folder()

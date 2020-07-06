@@ -185,7 +185,7 @@ def snap_store_accessible():
     try:
         urllib.request.urlopen('https://api.snapcraft.io', data=None, timeout=3)
         return True
-    except urllib.error.URLError:
+    except:
         return False
 
 def cat_yaml(snapfile):
