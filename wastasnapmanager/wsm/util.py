@@ -1,12 +1,15 @@
 """ Utility functions module. """
 
 import gi
+import logging
 import os
 import platform
 import pwd
 import re
+import socket
 import subprocess
 import tempfile
+import time
 import urllib.request
 
 gi.require_version("Gtk", "3.0")
@@ -19,13 +22,38 @@ from wsm.snapd import snap
 
 def get_user():
     try:
+        # if using pkexec
         user = pwd.getpwuid(int(os.environ['PKEXEC_UID'])).pw_name
     except KeyError:
+        # if using sudo
         user = pwd.getpwuid(os.geteuid()).pw_name
     return user
 
+def set_up_logging():
+    user = get_user()
+    log_path = Path('/home', user, '.log', 'wasta-snap-manager')
+    timestamp = time.strftime('%Y-%m-%d-%H-%M')
+    hostname = socket.gethostname()
+    log_file = timestamp + '-' + hostname + '.log'
+    filename = Path(log_path, log_file)
+    logging.basicConfig(
+        filename=filename,
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s:%(module)s %(message)s',
+        datefmt='%H:%M:%S'
+    )
+    logging.info('******* INSTALLING/UPDATING SNAPS **************')
+    print('wasta-snap-manager log file: %s' % filename)
+
+def log_snapd_version():
+    info = snap.system_info()
+    version = info['version']
+    logging.info('Snapd version: %s' % version)
+
 def guess_offline_source_folder():
     user = get_user()
+    logging.info('USER: %s' % user)
+    begin = ''
     try:
         begin = sorted(Path('/media/' + user).glob('*/wasta-offline'))[0]
     except IndexError:
@@ -38,7 +66,12 @@ def guess_offline_source_folder():
                 begin = sorted(Path('/media/').glob('*/wasta-offline'))[0]
             except IndexError:
                 # As a last resort just choose $HOME.
-                begin = Path('/home/' + user)
+                alt_begin = Path('/home/' + user)
+                logging.warning('No wasta-offline folder found. Falling back to %s.' % alt_begin)
+    if begin:
+        logging.info('wasta-offline folder found at %s' % begin)
+    else:
+        begin = alt_begin
     return user, begin.as_posix()
 
 def get_snap_icon(snap):

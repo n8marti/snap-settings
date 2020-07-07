@@ -72,6 +72,3 @@ class Handler():
         target = worker.handle_install_button_clicked
         self.t_install_snap = threading.Thread(target=target, args=(button, snap))
         self.t_install_snap.start()
-
-
-h = Handler()

@@ -2,6 +2,7 @@
 # All of these functions run inside of threads and use GLib to communicate back.
 
 import gi
+import logging
 import subprocess
 
 from pathlib import Path
@@ -174,13 +175,17 @@ def handle_install_button_clicked(button, snap):
         button.show()
 
 def update_snap_online(snap):
-    #print('$ pkexec snap refresh', snap)
+    logger.info('Updating (refreshing) %s online.' % snap)
     try:
-        subprocess.run(['pkexec', 'snap', 'refresh', snap])
+        subprocess.run(
+            ['pkexec', 'snap', 'refresh', snap],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT
+        )
         return 0
     except Exception as e:
-        print("Error during snap refresh:")
-        print(e)
+        logging.error(e)
+        logging.error(subprocess.stdout, subprocess.stderr)
         return 13
 
 def install_snap_offline(snap_file, classic_flag):
@@ -188,33 +193,44 @@ def install_snap_offline(snap_file, classic_flag):
     base = snap_file.stem
     name = base.split('_')[0]
     ext = snap_file.suffix
+    snap_file_name = base + '.snap'
     assert_file_name = base + '.assert'
     assert_file = Path(dir, assert_file_name)
 
     if not assert_file.is_file() or not snap_file.is_file():
-        print('Snap', name, 'not available for offline installation.')
-        print('Try installing', name, 'from the Snap Store instead.')
+        logging.error('Either %s or %s is missing' % (assert_file_name, snap_file_name))
+        logging.error('Try installing %s from the Snap Store instead.' % name)
         # TODO: Display message saying how to install it from the Snap Store.
         return 10
     try:
+        logging.info('Acknowledging \'%s\'' % assert_file)
         subprocess.run(
             ['pkexec', 'snap', 'ack', assert_file],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
     except Exception as e:
-        print("Assert file not accepted:")
-        print(e)
+        logging.error(e)
+        logging.error(subprocess.stdout, subprocess.stderr)
         return 11
     try:
         if classic_flag:
-            subprocess.run(['pkexec', 'snap', 'install', '--classic', snap_file])
+            logging.info('Installing/Updating \'%s\' with --classic flag' % snap_file)
+            subprocess.run(
+                ['pkexec', 'snap', 'install', '--classic', snap_file],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
             return 0
         else:
-            subprocess.run(['pkexec', 'snap', 'install', snap_file])
+            logging.info('Installing/Updating \'%s\'' % snap_file)
+            subprocess.run(['pkexec', 'snap', 'install', snap_file],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT
+            )
             return 0
     except Exception as e:
         # What are the possible errors here?
-        print("Error during snap install from ", snap_file + ':')
-        print(e)
+        logging.error(e)
+        logging.error(subprocess.stdout, subprocess.stderr)
         return 12

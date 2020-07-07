@@ -1,6 +1,7 @@
 """ Main GUI module. """
 
 import gi
+import logging
 import subprocess
 
 from pathlib import Path
@@ -19,6 +20,8 @@ from wsm import snapd
 class WSMApp(Gtk.Application):
     def __init__(self):
         super().__init__()
+        util.set_up_logging()
+        util.log_snapd_version()
 
         # Get UI location based on current file location.
         self.ui_dir = '/usr/share/wasta-snap-manager/ui'
@@ -31,6 +34,8 @@ class WSMApp(Gtk.Application):
         self.installable_snaps_list = []
         self.updatable_offline_list = []
         self.updatable_online_list = []
+
+        self.log_installed_snaps()
 
     def do_startup(self):
         # Define builder and its widgets.
@@ -99,7 +104,8 @@ class WSMApp(Gtk.Application):
         self.was_vp.show_all()
 
         # Connect GUI signals to Handler class.
-        self.builder.connect_signals(handler.h)
+        self.hand = handler.Handler()
+        self.builder.connect_signals(self.hand)
 
         # Adjust GUI in case of found 'wasta-offline' folder.
         self.updatable_offline_list = util.get_offline_updatable_snaps(self.start_folder)
@@ -204,12 +210,18 @@ class WSMApp(Gtk.Application):
             row = guiparts.AvailableSnapRow(snap, summary)
             list_box.add(row)
             install_button = row.button_install_offline
-            install_button.connect("clicked", handler.h.on_install_button_clicked, snap)
+            install_button.connect("clicked", self.hand.on_install_button_clicked, snap)
             rows[snap] = index
             index += 1
             row.show_all()
         list_box.show()
         return rows
+
+    def log_installed_snaps(self):
+        dict = {entry['name']: entry['revision'] for entry in self.installed_snaps_list}
+        logging.info('Installed snaps (snap: revision #):')
+        for k, v in dict.items():
+            logging.info('\t%s: %s' % (k, v))
 
 
 app = WSMApp()
