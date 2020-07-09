@@ -43,7 +43,8 @@ def set_up_logging():
         datefmt='%H:%M:%S'
     )
     logging.info('******* INSTALLING/UPDATING SNAPS **************')
-    print('wasta-snap-manager log: %s' % filename)
+    print('wasta-snap-manager log:')
+    print(filename)
 
 def log_installed_snaps(snaps):
     dct = {entry['name']: entry['revision'] for entry in snaps}

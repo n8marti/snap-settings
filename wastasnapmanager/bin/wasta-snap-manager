@@ -3,7 +3,6 @@
 # TODO: ('-' = to do, '+' = to test)
 #   + Make listbox_installed selectable when:
 #       + listbox_available is populated & if updatable_offline_list is not empty
-#   - Add CLI option to auto-update according to OFFLINE_MODE and W_OFFLINE folder from wasta-offline.
 #   - Unhide "Remove Snaps..." button: it works uninstalled but not when installed.
 #   - Add i10n/l18n
 
@@ -32,11 +31,7 @@ else:
 sys.path.append(modules_dir)
 from wsm import wsmapp
 
-
-
 if __name__ == '__main__':
-
     wsmapp.app.runmode = runmode
-
     status = wsmapp.app.run(sys.argv)
     sys.exit(status)
