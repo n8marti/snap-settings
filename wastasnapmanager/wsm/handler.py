@@ -1,12 +1,7 @@
 """ Signal handler module. """
 
-#import concurrent.futures
-import gi
 import subprocess
 import threading
-
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
 
 from wsm import util
 from wsm import worker

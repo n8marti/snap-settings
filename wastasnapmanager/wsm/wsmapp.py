@@ -2,15 +2,16 @@
 
 import gi
 import logging
-import subprocess
 
 from pathlib import Path
 current_file_path = Path(__file__)
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio
+from gi.repository import GLib
 from gi.repository import Gtk
 
+from wsm import cmdline
 from wsm import handler
 from wsm import guiparts
 from wsm import util
@@ -19,9 +20,23 @@ from wsm import snapd
 
 class WSMApp(Gtk.Application):
     def __init__(self):
-        super().__init__()
-        util.set_up_logging()
-        util.log_snapd_version()
+        super().__init__(
+            application_id='org.wasta.apps.wasta-snap-manager',
+            flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
+        )
+
+        self.add_main_option(
+            'version', ord('V'), GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
+            'Print snapd version number.', None
+        )
+        self.add_main_option(
+            'snaps-dir', ord('s'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING,
+            'Update snaps from offline folder.', '/path/to/wasta-offline'
+        )
+        self.add_main_option(
+            'online', ord('i'), GLib.OptionFlags.NONE, GLib.OptionArg.NONE,
+            'Update snaps from the online Snap Store.', None
+        )
 
         # Get UI location based on current file location.
         self.ui_dir = '/usr/share/wasta-snap-manager/ui'
@@ -34,8 +49,6 @@ class WSMApp(Gtk.Application):
         self.installable_snaps_list = []
         self.updatable_offline_list = []
         self.updatable_online_list = []
-
-        self.log_installed_snaps()
 
     def do_startup(self):
         # Define builder and its widgets.
@@ -55,6 +68,11 @@ class WSMApp(Gtk.Application):
         self.label_can_update = self.builder.get_object('label_can_update')
 
     def do_activate(self):
+        # Start GUI logging
+        util.set_up_logging()
+        util.log_snapd_version(util.get_snapd_version())
+        util.log_installed_snaps(self.installed_snaps_list)
+
         # Define window and make runtime adjustments.
         # TODO: The window could be its own class in its own module.
         self.window = self.builder.get_object('window_snap_manager')
@@ -118,6 +136,42 @@ class WSMApp(Gtk.Application):
             for c in children:
                 self.listbox_available.remove(c)
             self.populate_listbox_available(self.listbox_available, self.installable_snaps_list)
+
+    def do_command_line(self, command_line):
+        options = command_line.get_options_dict()
+        options = options.end().unpack()
+
+        if not options:
+            # No command line args passed: run GUI.
+            self.activate()
+            return 0
+
+        if 'version' in options:
+            print('snapd version: %s' % util.get_snapd_version())
+            return 0
+
+        # Set up logging.
+        util.set_up_logging()
+        util.log_snapd_version(util.get_snapd_version())
+        util.log_installed_snaps(self.installed_snaps_list)
+
+        # Give terminal guidance for tracking updates.
+        print('\nHint: To view update progress, open a new terminal and type:')
+        print('$ snap changes')
+        print('The last item on the list will be the in-progress update.')
+        print('Watch the progress of this particular change with:')
+        print('$ snap watch [number]\n')
+
+        # Run offline and then online updates, if indicated.
+        for opt in options:
+            if opt == 'snaps-dir':
+                folder = options['snaps-dir']
+                status = cmdline.update_offline(folder)
+                if status != 0:
+                    return status
+            elif opt == 'online':
+                status = cmdline.update_online()
+        return status
 
     def select_offline_update_rows(self, source_folder, init=False):
         rows = self.rows
@@ -216,12 +270,6 @@ class WSMApp(Gtk.Application):
             row.show_all()
         list_box.show()
         return rows
-
-    def log_installed_snaps(self):
-        dict = {entry['name']: entry['revision'] for entry in self.installed_snaps_list}
-        logging.info('Installed snaps (snap: revision #):')
-        for k, v in dict.items():
-            logging.info('\t%s: %s' % (k, v))
 
 
 app = WSMApp()

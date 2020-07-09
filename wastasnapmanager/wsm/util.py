@@ -39,15 +39,24 @@ def set_up_logging():
     logging.basicConfig(
         filename=filename,
         level=logging.INFO,
-        format='%(asctime)s %(levelname)s:%(module)s %(message)s',
+        format='%(asctime)s %(levelname)s: %(message)s',
         datefmt='%H:%M:%S'
     )
     logging.info('******* INSTALLING/UPDATING SNAPS **************')
-    print('wasta-snap-manager log file: %s' % filename)
+    print('wasta-snap-manager log: %s' % filename)
 
-def log_snapd_version():
+def log_installed_snaps(snaps):
+    dct = {entry['name']: entry['revision'] for entry in snaps}
+    logging.info('Installed snaps (revisions):')
+    for k, v in dct.items():
+        logging.info('\t%s (%s)' % (k, v))
+
+def get_snapd_version():
     info = snap.system_info()
     version = info['version']
+    return version
+
+def log_snapd_version(version):
     logging.info('Snapd version: %s' % version)
 
 def guess_offline_source_folder():
@@ -67,9 +76,9 @@ def guess_offline_source_folder():
             except IndexError:
                 # As a last resort just choose $HOME.
                 alt_begin = Path('/home/' + user)
-                logging.warning('No wasta-offline folder found. Falling back to %s.' % alt_begin)
+                logging.warning('No wasta-offline folder found. Falling back to \'%s\'.' % alt_begin)
     if begin:
-        logging.info('wasta-offline folder found at %s' % begin)
+        logging.info('wasta-offline folder found at \'%s\'' % begin)
     else:
         begin = alt_begin
     return user, begin.as_posix()
@@ -183,7 +192,7 @@ def list_offline_snaps(dir, init=False):
 def get_offline_updatable_snaps(folder):
     offline_snaps_list = list_offline_snaps(folder)
     installed_snaps_list = wsmapp.app.installed_snaps_list
-    # This list only provides snap names but no other details.
+    # This is a list of snap dictionaries (name, revision, file_path).
     updatable_snaps_list = []
     for offl in offline_snaps_list:
         for inst in installed_snaps_list:
